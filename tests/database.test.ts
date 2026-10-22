@@ -101,7 +101,10 @@ test("database RLS and complete revision/payment workflow", async () => {
   assert.equal(agreed.agreed_script, "Confidential script");
   assert.ok(agreed.delivery_deadline);
   await assert.rejects(op("project", project, { ...voiceBrief, title: "Changed agreed title" }), /Accepted brief terms are locked/);
+  // Arrange an elapsed deadline as the trusted fixture owner, not as the app role.
+  await db.exec("reset role");
   await db.query("update assignments set delivery_deadline=now()-interval '1 day' where id=$1", [assignment]);
+  await as(admin);
   await as(one);
   await assert.rejects(op("submit", assignment, { storage_path: "missing" }), /Delivery deadline passed/);
   await assert.rejects(op("extend_deadline", assignment, { deadline: new Date(Date.now() + 3 * 86_400_000).toISOString() }), /Admin required/);
