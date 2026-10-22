@@ -1,3 +1,4 @@
+import {CleanupPanel} from "@/components/cleanup-panel";
 import { sampleProject } from "@/lib/samples";
 import { AdminHistory } from "@/components/admin-history";
 import Link from "next/link";
@@ -9,6 +10,7 @@ import { ProjectForm } from "@/components/project-form";
 import { mutate } from "../actions";
 const titles: Record<string, string> = {
   history: "Operations history",
+  cleanup: "Review abandoned uploads",
   projects: "Find your next collaboration",
   applications: "Your applications",
   work: "Your creative work",
@@ -27,7 +29,7 @@ export default async function Section({
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
-    ["admin", "history"].includes(section),
+    ["admin", "history", "cleanup"].includes(section),
   );
   const { kind, history_page, admin_search } = await searchParams;
   const heading = (
@@ -36,6 +38,7 @@ export default async function Section({
       <h1>{titles[section]}</h1>
     </>
   );
+  if (section === "cleanup") return <>{heading}<CleanupPanel/></>;
   if (section === "history")
     return (
       <>
@@ -334,7 +337,7 @@ export default async function Section({
               <p>{s.note || "New submission"}</p>
               {data && (
                 <>
-                  <video controls preload="metadata" src={data.signedUrl} />
+                  <video playsInline controls preload="metadata" src={data.signedUrl} />
                   <a href={data.signedUrl} target="_blank" rel="noreferrer">
                     Open original audio / video (5-minute link)
                   </a>

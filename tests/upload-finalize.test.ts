@@ -3,15 +3,25 @@ import assert from "node:assert/strict";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { finalizeUploadedMedia } from "../src/lib/upload-finalize";
 
-function mock(outcomes: Array<"error" | "ok">, linked = false, lookupError = false, removeError = false) {
+function mock(
+  outcomes: Array<"error" | "ok">,
+  linked = false,
+  lookupError = false,
+  removeError = false,
+) {
   let rpcCalls = 0;
   let removeCalls = 0;
   const client = {
-    rpc: async () => ({ error: outcomes[rpcCalls++] === "ok" ? null : { message: "network" } }),
+    rpc: async () => ({
+      error: outcomes[rpcCalls++] === "ok" ? null : { message: "network" },
+    }),
     from: () => ({
       select: () => ({
         eq: () => ({
-          maybeSingle: async () => ({ data: linked ? { id: "linked" } : null, error: lookupError ? { message: "blocked" } : null }),
+          maybeSingle: async () => ({
+            data: linked ? { id: "linked" } : null,
+            error: lookupError ? { message: "blocked" } : null,
+          }),
         }),
       }),
     }),
@@ -44,18 +54,27 @@ test("uncertain RPC result is accepted when the linked row exists", async () => 
   await finalizeUploadedMedia(client, options);
   assert.deepEqual(stats(), { rpcCalls: 1, removeCalls: 0 });
 });
-test("unlinked objects are removed through Storage API only", async () => {
+test("failed attachments retain bytes for explicit recovery and authorized cleanup", async () => {
   const { client, stats } = mock(["error", "error"]);
-  await assert.rejects(finalizeUploadedMedia(client, options), /unused upload was removed/);
-  assert.deepEqual(stats(), { rpcCalls: 2, removeCalls: 1 });
+  await assert.rejects(
+    finalizeUploadedMedia(client, options),
+    /not yet attached/,
+  );
+  assert.deepEqual(stats(), { rpcCalls: 2, removeCalls: 0 });
 });
 test("an unknown database state is not treated as safe for deletion", async () => {
   const { client, stats } = mock(["error"], false, true);
-  await assert.rejects(finalizeUploadedMedia(client, options), /status cannot be verified/);
+  await assert.rejects(
+    finalizeUploadedMedia(client, options),
+    /status cannot be verified/,
+  );
   assert.deepEqual(stats(), { rpcCalls: 1, removeCalls: 0 });
 });
-test("failed cleanup never reports the object as removed", async () => {
+test("finalize never invokes deletion even if Storage removal would fail", async () => {
   const { client, stats } = mock(["error", "error"], false, false, true);
-  await assert.rejects(finalizeUploadedMedia(client, options), /cleanup could not be confirmed/);
-  assert.deepEqual(stats(), { rpcCalls: 2, removeCalls: 1 });
+  await assert.rejects(
+    finalizeUploadedMedia(client, options),
+    /not yet attached/,
+  );
+  assert.deepEqual(stats(), { rpcCalls: 2, removeCalls: 0 });
 });

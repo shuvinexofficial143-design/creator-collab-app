@@ -2,8 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * A failed RPC response is not proof the transaction rolled back. Query the
- * private linked row before retrying or deleting an uploaded object.
- * Only unattached files may be deleted (enforced again by Storage RLS).
+ * private linked row before retrying an uploaded object.
+ * Deletion is now a separate Admin-confirmed, database-fenced operation.
  */
 export async function finalizeUploadedMedia(
   client: SupabaseClient,
@@ -16,16 +16,17 @@ export async function finalizeUploadedMedia(
     payload: Record<string, unknown>;
   },
 ): Promise<void> {
-  const { bucket, table, op, target, path, payload } = options;
+  const { table, op, target, path, payload } = options;
   async function isLinked() {
     const { data, error } = await client
       .from(table)
       .select("id")
       .eq("storage_path", path)
       .maybeSingle();
-    if (error) throw new Error(
-      "Upload status cannot be verified. Do not upload again; contact the Admin.",
-    );
+    if (error)
+      throw new Error(
+        "Upload status cannot be verified. Do not upload again; contact the Admin.",
+      );
     return Boolean(data);
   }
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -37,12 +38,7 @@ export async function finalizeUploadedMedia(
     }
     if (await isLinked()) return;
   }
-  const { error: cleanupError } = await client.storage.from(bucket).remove([path]);
-  if (cleanupError) {
-    if (await isLinked()) return;
-    throw new Error(
-      "Upload was not attached and cleanup could not be confirmed. Contact the Admin.",
-    );
-  }
-  throw new Error("Submission could not be saved. The unused upload was removed; please retry.");
+  throw new Error(
+    "The file is uploaded but not yet attached. Use Recover uploaded file; it will not be uploaded twice. Admin cleanup requires a separate preview and authorization.",
+  );
 }

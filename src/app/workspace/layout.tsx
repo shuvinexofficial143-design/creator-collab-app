@@ -19,7 +19,7 @@ export default async function WorkspaceLayout({
     ["profile", "Profile"],
   ];
   if (profile.role === "ADMIN")
-    links.push(["admin", "Admin panel"], ["history", "Operations history"]);
+    links.push(["admin", "Admin panel"], ["history", "Operations history"], ["cleanup", "Storage cleanup"]);
   return (
     <div className="shell">
       <aside>

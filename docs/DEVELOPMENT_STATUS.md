@@ -1,3 +1,24 @@
+# Phase 3 checkpoint — 2026-10-22
+
+Continuation base: `28f7da333928a71ca92a9f63ae7aec60a468fb7c`. Phase 2 source CI was verified green on `42cf32c2dbbfdf6bedddc1447acd75ae9f7bf48f`, run 39737437928.
+
+## New implementation
+- Fourth migration: registered upload sessions, 30-minute leases, per-path locks, immutable cleanup claims, owner/target/size/MIME consistency and Admin-only deletion RLS.
+- Admin cleanup preview excludes referenced files, files changed within 24 hours, and leases active within the previous hour. Explicit per-file authorization; deletion uses Storage API and reconciliation writes success/failure audit events. Paths remain fenced after partial failure.
+- TUS resumable uploads, real byte progress, cancellation/pause, bounded retries, token refresh before requests, strict endpoint checks, same-file recovery using SHA-256 identity, and upload-to-record recovery without retransmitting bytes.
+- Browser extension/MIME/signature validation for MP3, WAV, M4A, OGG, MP4, WebM and reference images; private inline mobile playback preserved.
+- Phase 2 automatic immediate orphan deletion is intentionally replaced by retained recovery plus authorized aged cleanup. Referenced files cannot be claimed or relinked to a claimed path.
+
+## Checks for this checkpoint
+TypeScript/lint/build passed locally. 14 tests passed; real two-connection PostgreSQL concurrency test is skipped locally and configured for a disposable PostgreSQL 17 service in CI. Full hosted Storage/Auth testing remains BLOCKED. Latest checkpoint CI must be inspected after push.
+
+## Infrastructure and audit
+Connected Supabase inventory now exposes organization `uuwjtdflyyatqdsqqcbz` (sanhayparmar123456@gmail.com's Org); no dedicated Creator Collab project. Organization selection must be confirmed by the owner before cost lookup/project creation per connector rules. No unrelated project was modified. Both connected Vercel accounts have no Creator project; no preview or production deployed.
+
+`npm audit` found five high-severity dependency-chain findings from one unpatched development-only advisory, GHSA-vfj7-8cjw-p6xm, braces <=3.0.3. Registry latest is 3.0.3; advisory reports no patched version. No forced Next.js downgrade or advisory suppression applied. Further audit details will be recorded in SECURITY_AUDIT.md.
+
+---
+
 # Development status — 2026-10-22 (Phase 2)
 
 ## Phase 2 increments (feature/creator-platform-mvp)

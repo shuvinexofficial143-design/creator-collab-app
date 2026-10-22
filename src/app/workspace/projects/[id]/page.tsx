@@ -197,7 +197,7 @@ export default async function Project({
                   ) : m.mime_type.startsWith("audio/") ? (
                     <audio controls src={data.signedUrl} />
                   ) : (
-                    <video controls preload="metadata" src={data.signedUrl} />
+                    <video playsInline controls preload="metadata" src={data.signedUrl} />
                   )}
                   <p>{m.caption}</p>
                 </article>
@@ -285,7 +285,7 @@ export default async function Project({
                     (p.kind === "VOICE" ? (
                       <audio controls src={data.signedUrl} />
                     ) : (
-                      <video controls preload="metadata" src={data.signedUrl} />
+                      <video playsInline controls preload="metadata" src={data.signedUrl} />
                     ))}
                 </article>
               );
