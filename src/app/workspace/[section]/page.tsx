@@ -1,4 +1,5 @@
 import {CleanupPanel} from "@/components/cleanup-panel";
+import { projectKindFromSubmission } from "@/lib/submission-media";
 import { sampleProject } from "@/lib/samples";
 import { AdminHistory } from "@/components/admin-history";
 import Link from "next/link";
@@ -254,7 +255,7 @@ export default async function Section({
       .limit(50),
     client.from("payments").select("*").neq("status", "PAID").order("id", { ascending: false }).limit(50),
     client.from("profiles").select("id,full_name,role,active").order("created_at", { ascending: false }).limit(50),
-    client.from("submissions").select("*").eq("status", "SUBMITTED").order("created_at", { ascending: false }).limit(50),
+    client.from("submissions").select("*,assignments(projects(kind))").eq("status", "SUBMITTED").order("created_at", { ascending: false }).limit(50),
     client.from("shipping").select("*").eq("status", "READY").order("assignment_id", { ascending: false }).limit(50),
     client.from("assignments")
       .select("id,status,delivery_deadline,projects(title)")
@@ -347,12 +348,19 @@ export default async function Section({
           const { data } = await client.storage
             .from("submissions")
             .createSignedUrl(s.storage_path, 300);
+          const mediaKind = projectKindFromSubmission(s.assignments);
           return (
             <article key={s.id} className="panel">
               <p>{s.note || "New submission"}</p>
               {data && (
                 <>
-                  <video playsInline controls preload="metadata" src={data.signedUrl} />
+                  {mediaKind === "VOICE" ? (
+                    <audio controls preload="metadata" src={data.signedUrl} />
+                  ) : mediaKind === "PRODUCT" ? (
+                    <video playsInline controls preload="metadata" src={data.signedUrl} />
+                  ) : (
+                    <p role="status">Media type unavailable. Use the signed original link below.</p>
+                  )}
                   <a href={data.signedUrl} target="_blank" rel="noreferrer">
                     Open original audio / video (5-minute link)
                   </a>
