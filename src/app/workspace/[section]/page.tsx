@@ -26,14 +26,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; earnings_page?: string }>;
+  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; admin_page?: string; earnings_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history", "cleanup"].includes(section),
   );
-  const { kind, history_page, admin_search, earnings_page } = await searchParams;
+  const { kind, history_page, admin_search, admin_page, earnings_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -246,26 +246,30 @@ export default async function Section({
       </>
     );
   }
+  const adminPage = admin_page && /^[1-9][0-9]{0,2}$/.test(admin_page) ? Number(admin_page) : 1;
+  const adminPageSize = 50;
+  const adminStart = (adminPage - 1) * adminPageSize;
   const [metrics, results] = await Promise.all([readWorkspaceMetrics(client), Promise.all([
     client
       .from("applications")
-      .select("*,projects(title),profiles(full_name)")
+      .select("*,projects(title),profiles(full_name)", { count: "exact" })
       .eq("status", "PENDING")
       .order("created_at", { ascending: false })
-      .limit(50),
-    client.from("payments").select("*").neq("status", "PAID").order("id", { ascending: false }).limit(50),
-    client.from("profiles").select("id,full_name,role,active").order("created_at", { ascending: false }).limit(50),
-    client.from("submissions").select("*,assignments(projects(kind))").eq("status", "SUBMITTED").order("created_at", { ascending: false }).limit(50),
-    client.from("shipping").select("*").eq("status", "READY").order("assignment_id", { ascending: false }).limit(50),
+      .range(adminStart, adminStart + adminPageSize - 1),
+    client.from("payments").select("*", { count: "exact" }).neq("status", "PAID").order("id", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
+    client.from("profiles").select("id,full_name,role,active", { count: "exact" }).order("created_at", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
+    client.from("submissions").select("*,assignments(projects(kind))", { count: "exact" }).eq("status", "SUBMITTED").order("created_at", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
+    client.from("shipping").select("*", { count: "exact" }).eq("status", "READY").order("assignment_id", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
     client.from("assignments")
-      .select("id,status,delivery_deadline,projects(title)")
+      .select("id,status,delivery_deadline,projects(title)", { count: "exact" })
       .neq("status", "APPROVED")
       .order("created_at", { ascending: false })
-      .limit(50),
+      .range(adminStart, adminStart + adminPageSize - 1),
   ])]);
   if (results.some((r) => r.error)) throw Error("Admin records unavailable");
   const [applications, payments, creators, submissions, shipping, deadlines] = results;
   const search = String(admin_search || "").trim().toLowerCase().slice(0, 80);
+  const searchSuffix = search ? `&admin_search=${encodeURIComponent(search)}` : "";
   const filteredApplications = applications.data!.filter((a) =>
     !search || [a.note, a.projects?.title, a.profiles?.full_name]
       .some((value) => String(value || "").toLowerCase().includes(search)),
@@ -277,7 +281,7 @@ export default async function Section({
     <>
       {heading}
       <p>Review applications, manage briefs, and record completed transfers.</p>
-      <p className="subtle">Dashboard totals count all authorized records. Work queues show only their 50 newest entries.</p>
+      <p className="subtle">Dashboard totals include all authorized records. Work queues show 50 entries per page; search matches only the displayed page.</p>
       <div className="grid three">
         <Stat label="Pending applications" value={metrics.pending_applications} />
         <Stat label="Awaiting review" value={metrics.awaiting_review} />
@@ -315,6 +319,13 @@ export default async function Section({
         <button type="submit">Search</button>
         <Link href="/workspace/admin">Clear</Link>
       </form>
+      <nav className="filters" aria-label="Admin work queue pagination">
+        {adminPage > 1 && <Link href={`/workspace/admin?admin_page=${adminPage - 1}${searchSuffix}`}>← Previous queue page</Link>}
+        <span>Work queue page {adminPage}</span>
+        {results.some((r) => r.count !== null && r.count > adminPage * adminPageSize) && (
+          <Link href={`/workspace/admin?admin_page=${adminPage + 1}${searchSuffix}`}>Next queue page →</Link>
+        )}
+      </nav>
       <h2>Incoming applications</h2>
       {filteredApplications.map((a) => (
         <article className="panel" key={a.id}>
@@ -341,7 +352,7 @@ export default async function Section({
           </ActionForm>
         </article>
       ))}
-      {!filteredApplications.length && <Empty text={search ? "No matching pending applications." : "No pending applications."} />}
+      {!filteredApplications.length && <Empty text={search ? "No matching pending applications on this page." : "No pending applications."} />}
       <h2>Work awaiting review</h2>
       {await Promise.all(
         filteredSubmissions.map(async (s) => {
@@ -481,6 +492,13 @@ export default async function Section({
           )}
         </div>
       ))}
+      <nav className="filters" aria-label="Admin queue navigation">
+        {adminPage > 1 && <Link href={`/workspace/admin?admin_page=${adminPage - 1}${searchSuffix}`}>← Previous</Link>}
+        <span>Page {adminPage} · {applications.count ?? "—"} pending applications / {submissions.count ?? "—"} awaiting review</span>
+        {results.some((r) => r.count !== null && r.count > adminPage * adminPageSize) && (
+          <Link href={`/workspace/admin?admin_page=${adminPage + 1}${searchSuffix}`}>Next →</Link>
+        )}
+      </nav>
     </>
   );
 }
