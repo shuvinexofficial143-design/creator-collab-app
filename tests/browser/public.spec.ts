@@ -31,3 +31,10 @@ test("login form displays configuration error without success claim", async ({
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.locator("form").getByRole("alert")).toContainText("not configured");
 });
+
+test("unconfigured private export fails closed with no cached data", async ({ request }) => {
+  const response = await request.get("/api/admin/export?kind=payments");
+  expect(response.status()).toBe(503);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  expect(response.headers()["x-content-type-options"]).toBe("nosniff");
+});

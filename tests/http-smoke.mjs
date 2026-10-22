@@ -43,6 +43,12 @@ try {
     assert.equal(response.headers.get("x-content-type-options"), "nosniff");
     console.log("PASS", path, "→", final);
   }
+  const exportResponse = await fetch("http://127.0.0.1:3199/api/admin/export?kind=payments");
+  assert.equal(exportResponse.status, 503, "Unconfigured private CSV must fail closed");
+  assert.match(exportResponse.headers.get("cache-control") || "", /no-store/);
+  assert.equal(exportResponse.headers.get("x-content-type-options"), "nosniff");
+  assert.match(await exportResponse.text(), /not configured/);
+  console.log("PASS /api/admin/export → fails closed without backend");
 } finally {
   server.kill("SIGTERM");
 }
