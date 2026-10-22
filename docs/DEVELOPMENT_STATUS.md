@@ -2,7 +2,7 @@
 
 ## Previous verified GitHub checkpoint
 
-`3ca5dbb7948096b14db1ada3859b616dd1842948` on `feature/creator-platform-mvp`.
+`17b887da7cc6e71a1935e721348953789ad1c80c` on `feature/creator-platform-mvp`.
 The current follow-up adds structured briefs, media, operations history, sample templates, account controls and more tests. Its commit SHA is available in Git history; this document records the previous verified SHA rather than a self-referential hash.
 
 ## Implemented in source
@@ -27,7 +27,7 @@ The current follow-up adds structured briefs, media, operations history, sample 
 - PASSED: production HTTP smoke checks for landing/login/register/forgot and protected-route setup redirects, with security header checks.
 - BLOCKED: local Playwright visual/browser execution — Chromium download returned truncated/invalid ZIP archives. Browser tests are committed for CI; no screenshots or device verification claimed.
 - BLOCKED: hosted Supabase Auth/Storage/email E2E and security advisors — dedicated app project not configured.
-- GitHub CI is configured; its actual execution result must be inspected after push, not assumed.
+- GitHub CI on 17b887d passed install, TypeScript, lint, database tests, production build and HTTP smoke. Chromium installed successfully in CI; 4 of 6 browser checks passed. Two failed because the login assertion matched both the form alert and Next.js route announcer. The assertion is now scoped to the form; the follow-up run is pending verification.
 - Deployment: NOT DEPLOYED.
 
 ## Remaining gaps / limitations

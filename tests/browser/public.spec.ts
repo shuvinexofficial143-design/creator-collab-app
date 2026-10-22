@@ -29,5 +29,5 @@ test("login form displays configuration error without success claim", async ({
   await page.getByLabel("Email", { exact: true }).fill("creator@example.com");
   await page.getByLabel("Password", { exact: true }).fill("test-password-123");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText("not configured");
+  await expect(page.locator("form").getByRole("alert")).toContainText("not configured");
 });
