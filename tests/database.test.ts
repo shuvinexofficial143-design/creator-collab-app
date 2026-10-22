@@ -19,6 +19,12 @@ test("database RLS and complete revision/payment workflow", async () => {
       "utf8",
     ),
   );
+  await db.exec(
+    readFileSync(
+      "supabase/migrations/20261022121100_agreed_terms_and_deadlines.sql",
+      "utf8",
+    ),
+  );
   const admin = "00000000-0000-4000-8000-000000000001",
     one = "00000000-0000-4000-8000-000000000002",
     two = "00000000-0000-4000-8000-000000000003";
@@ -45,7 +51,7 @@ test("database RLS and complete revision/payment workflow", async () => {
     return r.rows[0].workflow;
   }
   await as(admin);
-  const project = await op("project", null, {
+  const voiceBrief = {
     title: "Hindi voice over",
     description: "Read this promotional script",
     kind: "VOICE",
@@ -57,7 +63,14 @@ test("database RLS and complete revision/payment workflow", async () => {
     deadline: "2099-01-01",
     status: "PUBLISHED",
     script: "Confidential script",
-  });
+    details: {
+      duration_seconds: 60,
+      revision_limit: 1,
+      delivery_deadline: "2099-01-02T00:00:00.000Z",
+    },
+  };
+  const project = await op("project", null, voiceBrief);
+
   await as(one);
   assert.equal(
     (await db.query("select * from project_scripts")).rows.length,
@@ -82,6 +95,19 @@ test("database RLS and complete revision/payment workflow", async () => {
   assert.equal((await db.query("select * from applications")).rows.length, 1);
   await as(admin);
   const assignment = await op("decision", application, { status: "APPROVED" });
+  const agreed = (await db.query<{ agreed_brief: { title: string; details: { revision_limit: number } }; agreed_script: string; delivery_deadline: string }>("select agreed_brief,agreed_script,delivery_deadline from assignments where id=$1", [assignment])).rows[0];
+  assert.equal(agreed.agreed_brief.title, "Hindi voice over");
+  assert.equal(agreed.agreed_brief.details.revision_limit, 1);
+  assert.equal(agreed.agreed_script, "Confidential script");
+  assert.ok(agreed.delivery_deadline);
+  await assert.rejects(op("project", project, { ...voiceBrief, title: "Changed agreed title" }), /Accepted brief terms are locked/);
+  await db.query("update assignments set delivery_deadline=now()-interval '1 day' where id=$1", [assignment]);
+  await as(one);
+  await assert.rejects(op("submit", assignment, { storage_path: "missing" }), /Delivery deadline passed/);
+  await assert.rejects(op("extend_deadline", assignment, { deadline: "2099-02-01T00:00:00Z" }), /Admin required/);
+  await as(admin);
+  await op("extend_deadline", assignment, { deadline: "2099-02-01T00:00:00Z" });
+  assert.equal((await db.query<{ delivery_deadline: string }>("select delivery_deadline from assignments where id=$1", [assignment])).rows.length, 1);
   await assert.rejects(op("decision", second, { status: "APPROVED" }), /full/);
   await assert.rejects(
     op("decision", application, { status: "APPROVED" }),
@@ -135,6 +161,10 @@ test("database RLS and complete revision/payment workflow", async () => {
   ]);
   const revised = await op("submit", assignment, { storage_path: path });
   await as(admin);
+  await assert.rejects(
+    op("review", revised, { status: "REVISION", reason: "Another revision" }),
+    /Revision limit reached/,
+  );
   await op("review", revised, { status: "APPROVED" });
   const payment = (await db.query<{ id: string }>("select id from payments"))
     .rows[0].id;
@@ -169,7 +199,7 @@ test("database RLS and complete revision/payment workflow", async () => {
       .status,
     "PAID",
   );
-  assert.equal((await db.query("select * from notifications")).rows.length, 5);
+  assert.equal((await db.query("select * from notifications")).rows.length, 6);
   const notice = (
     await db.query<{ id: string }>("select id from notifications limit 1")
   ).rows[0].id;
