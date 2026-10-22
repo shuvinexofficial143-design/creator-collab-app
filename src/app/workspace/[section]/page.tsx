@@ -372,7 +372,7 @@ export default async function Section({
       </p>
       {deadlines.data!.map((a) => (
         <article className="panel" key={a.id}>
-          <strong>{a.projects?.title || "Assigned project"}</strong>
+          <strong>{a.projects?.[0]?.title || "Assigned project"}</strong>
           <p>
             {a.status} · Current deadline:{" "}
             {a.delivery_deadline
