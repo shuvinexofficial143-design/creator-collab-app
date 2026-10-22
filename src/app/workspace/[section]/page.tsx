@@ -22,14 +22,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string }>;
+  searchParams: Promise<{ kind?: string; history_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history"].includes(section),
   );
-  const { kind } = await searchParams;
+  const { kind, history_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -40,7 +40,7 @@ export default async function Section({
     return (
       <>
         {heading}
-        <AdminHistory />
+        <AdminHistory page={history_page && /^[1-9][0-9]{0,2}$/.test(history_page) ? Number(history_page) : 1} />
       </>
     );
   if (section === "profile")

@@ -1,6 +1,9 @@
 import { account } from "@/lib/auth";
+import Link from "next/link";
 import { money } from "@/lib/config";
-export async function AdminHistory() {
+export async function AdminHistory({ page = 1 }: { page?: number }) {
+  const size = 25;
+  const start = (page - 1) * size;
   const { client } = await account(true);
   const [applications, payments, audits, shipping] = await Promise.all([
     client
@@ -8,29 +11,31 @@ export async function AdminHistory() {
       .select("*,projects(title),profiles(full_name)")
       .neq("status", "PENDING")
       .order("created_at", { ascending: false })
-      .limit(100),
+      .range(start, start + size - 1),
     client
       .from("payments")
       .select("*")
       .eq("status", "PAID")
       .order("paid_at", { ascending: false })
-      .limit(100),
+      .range(start, start + size - 1),
     client
       .from("audit_logs")
       .select("*")
       .order("created_at", { ascending: false })
-      .limit(100),
+      .range(start, start + size - 1),
     client
       .from("shipping")
       .select("*")
-      .in("status", ["DISPATCHED", "DELIVERED"]),
+      .in("status", ["DISPATCHED", "DELIVERED"])
+      .order("assignment_id", { ascending: false })
+      .range(start, start + size - 1),
   ]);
   if ([applications, payments, audits, shipping].some((r) => r.error))
     throw Error("History unavailable");
   return (
     <>
       <p>
-        Most recent 100 records per history section. Times are displayed in IST.
+        Showing page {page} of each history section (25 records per section). Times are displayed in IST.
       </p>
       <h2>Application decisions</h2>
       {applications.data!.map((a) => (
@@ -93,6 +98,13 @@ export async function AdminHistory() {
           </tbody>
         </table>
       </div>
+      <nav className="filters" aria-label="History pagination">
+        {page > 1 && <Link href={`/workspace/history?history_page=${page - 1}`}>← Previous page</Link>}
+        <span>Page {page}</span>
+        {[applications, payments, audits, shipping].some((r) => (r.data?.length || 0) === size) && (
+          <Link href={`/workspace/history?history_page=${page + 1}`}>Next page →</Link>
+        )}
+      </nav>
     </>
   );
 }
