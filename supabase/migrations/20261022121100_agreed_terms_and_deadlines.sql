@@ -122,3 +122,8 @@ create or replace function public.workflow(op text,target uuid default null,payl
 returns uuid language sql security invoker set search_path='' as $$
   select private.mutate(op,target,payload)
 $$;
+
+-- Renaming a function retains its old grants. Revoke the legacy dispatcher
+-- entrypoints so authenticated clients cannot bypass the phase-2 safeguards.
+revoke execute on function private.mutate_phase1(text,uuid,jsonb) from public,anon,authenticated;
+revoke execute on function private.mutate_core(text,uuid,jsonb) from public,anon,authenticated;

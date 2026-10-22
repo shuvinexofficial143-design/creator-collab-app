@@ -72,6 +72,15 @@ test("database RLS and complete revision/payment workflow", async () => {
   const project = await op("project", null, voiceBrief);
 
   await as(one);
+  // Legacy privileged dispatchers must not be callable by application users.
+  await assert.rejects(
+    db.query("select private.mutate_core($1,$2,$3::jsonb)", ["profile", null, "{}"]),
+    /permission denied/,
+  );
+  await assert.rejects(
+    db.query("select private.mutate_phase1($1,$2,$3::jsonb)", ["profile", null, "{}"]),
+    /permission denied/,
+  );
   assert.equal(
     (await db.query("select * from project_scripts")).rows.length,
     0,
