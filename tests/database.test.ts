@@ -104,9 +104,9 @@ test("database RLS and complete revision/payment workflow", async () => {
   await db.query("update assignments set delivery_deadline=now()-interval '1 day' where id=$1", [assignment]);
   await as(one);
   await assert.rejects(op("submit", assignment, { storage_path: "missing" }), /Delivery deadline passed/);
-  await assert.rejects(op("extend_deadline", assignment, { deadline: "2099-02-01T00:00:00Z" }), /Admin required/);
+  await assert.rejects(op("extend_deadline", assignment, { deadline: new Date(Date.now() + 3 * 86_400_000).toISOString() }), /Admin required/);
   await as(admin);
-  await op("extend_deadline", assignment, { deadline: "2099-02-01T00:00:00Z" });
+  await op("extend_deadline", assignment, { deadline: new Date(Date.now() + 3 * 86_400_000).toISOString() });
   assert.equal((await db.query<{ delivery_deadline: string }>("select delivery_deadline from assignments where id=$1", [assignment])).rows.length, 1);
   await assert.rejects(op("decision", second, { status: "APPROVED" }), /full/);
   await assert.rejects(
