@@ -48,7 +48,11 @@ export async function GET(request: NextRequest) {
       .range(offset, last);
     if (result.error || !result.data)
       return deny(503, "Export data could not be read. No partial CSV was generated.");
-    rows.push(...(result.data as Record<string, unknown>[]));
+    if (!Array.isArray(result.data) ||
+      result.data.some((row) => row === null || typeof row !== "object" || Array.isArray(row))) {
+      return deny(503, "Export returned unexpected records.");
+    }
+    rows.push(...(result.data as unknown as Record<string, unknown>[]));
     if (rows.length > MAX_EXPORT_ROWS)
       return deny(422, "Export safety limit exceeded.");
   }
