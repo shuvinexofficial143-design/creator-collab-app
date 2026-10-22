@@ -11,4 +11,4 @@ Requires Node.js 22+ and npm. Run `npm ci`, copy `.env.example` to `.env.local`,
 - `npm test` — validation and embedded PostgreSQL integration tests
 - `npm run build` — production build
 
-Read [Setup](docs/SETUP.md), [Architecture](docs/ARCHITECTURE.md), [Development status](docs/DEVELOPMENT_STATUS.md) and [Next steps](docs/NEXT_STEPS.md) before running migrations or deploying. This is an in-development MVP; live Auth/Storage and browser acceptance tests are still required.
+Read [Setup](docs/SETUP.md), [Architecture](docs/ARCHITECTURE.md), [Development status](docs/DEVELOPMENT_STATUS.md) and [Next steps](docs/NEXT_STEPS.md) before running migrations or deploying. This is an in-development MVP; live Auth/Storage and browser acceptance tests are still required. Phase 4 adds database-side RLS totals, bounded Admin CSV exports and isolated Product/Voice workflow tests. Review [Security Audit](docs/SECURITY_AUDIT.md) before launch.

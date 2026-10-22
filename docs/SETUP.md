@@ -1,7 +1,7 @@
 # Setup
 
 1. Use a dedicated Supabase project. None of the connected projects were identified as belonging to this app, so none were modified.
-2. Run all four SQL files in `supabase/migrations/` in filename order in a new project's SQL editor, or apply with the installed Supabase CLI after following its `--help` and linking the correct project. The migrations create private submissions/project-media buckets, snapshot accepted terms, enforce deadlines/revisions, and add restricted orphan-delete policies. Verify revoked EXECUTE privileges for legacy workflow functions. Never apply to an unrelated production project.
+2. Run all five SQL files in `supabase/migrations/` in filename order in a new project's SQL editor, or apply with the installed Supabase CLI after following its `--help` and linking the correct project. The migrations create private submissions/project-media buckets, snapshot accepted terms, enforce deadlines/revisions, and add restricted orphan-delete policies. Verify revoked EXECUTE privileges for legacy workflow functions. Never apply to an unrelated production project.
 3. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. No service-role key is required by this application.
 4. Set APP_URL to the exact origin, e.g. http://localhost:3000 locally, and configure Supabase Auth Site URL and allowed redirect URLs including `/auth/callback` and `/auth/callback?next=/auth/reset`. Enable email confirmation and configure production SMTP.
 5. Register the owner using the app and confirm their email. In the trusted Supabase SQL editor, promote only the verified owner's user UUID: `update public.profiles set role = 'ADMIN' where id = '<verified-owner-user-uuid>';`. Do not use user_metadata or browser-controlled role settings. There is no public admin password.
@@ -32,3 +32,12 @@ Apply the fourth migration after Phase 2 and deploy the matching frontend togeth
 Admin → Storage cleanup is a preview. Tick the per-file authorization only after reviewing it. Cleanup revalidates age, lease, references and exact object UUID before deletion through Storage API; unknown failures keep a tombstone and may be retried. Never delete Storage metadata directly in production.
 
 Uploads use Supabase TUS with 6 MiB chunks, no overwrite, and request-time session validation. Reselect the identical file to resume. A 100% progress bar means bytes transferred, not submitted; success is displayed only after linking the database record. Pending records are recoverable from the upload form.
+
+## Phase 4 reporting and exports
+
+- Apply `20261022123600_workspace_metrics.sql` last. The `workspace_metrics()` RPC uses SECURITY INVOKER and reads the caller's RLS-visible rows, not a service-role bypass.
+- Earnings totals are database aggregates, not the sum of a possibly truncated browser list. Payment history pages contain at most 25 records.
+- The Admin Operations History page links to four CSV exports under `/api/admin/export?kind=applications|payments|shipping|audit`. Exports require active ADMIN credentials. They reject datasets over 5,000 rows; do not send payment references or operational CSVs to untrusted recipients.
+- The CSV export intentionally omits shipping addresses; access remains protected in the Admin dashboard and database. Uploaded media are never exported in the CSV.
+- A 401 or 403 is expected for unauthenticated/non-Admin downloads once Supabase is configured. Real hosted acceptance must verify this.
+- Security note: `braces@3.0.3` remains a vulnerable transitive development-only dependency with no patched npm version yet. See `docs/SECURITY_AUDIT.md`.

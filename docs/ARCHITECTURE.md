@@ -17,3 +17,9 @@ Storage objects use creator UUID / assignment UUID / random UUID. Bucket constra
 The operations UI paginates Admin history (25 rows per section) and Creator submission history (10 rows per assignment); the Admin panel also searches pending application and submission text.
 
 The SQL integration test uses PGlite PostgreSQL with small auth/storage schema fixtures, real migration SQL, real RLS and role switching. This tests database behavior, not hosted Auth, Storage HTTP or email delivery.
+
+## Phase 4 reporting API
+
+`workspace_metrics()` is a SECURITY INVOKER Postgres function with a fixed search path and active-profile guard. It aggregates payments and counts within existing RLS policies, eliminating PostgREST's default 1,000-response-row limit without exposing another Creator's data. The function is callable only by `authenticated` and rejects inactive users.
+
+`GET /api/admin/export` validates the Supabase user and active ADMIN profile on the server, resolves only a static dataset/column allow-list, counts rows exactly and refuses any export above 5,000 records. It iterates small read batches, validates row shapes and returns a non-cacheable CSV attachment with spreadsheet formula-cell protection. The API never uses a service-role token. Hosted authorization testing remains pending.

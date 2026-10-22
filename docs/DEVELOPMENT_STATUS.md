@@ -1,3 +1,35 @@
+# Phase 4 development — 2026-10-22
+
+## Recovered source and verified starting point
+- Recovered GitHub HEAD `e16ef674d9eab9d69b8c05a53c75b73614674311` on `feature/creator-platform-mvp` (Phase 3 TUS and leased cleanup). GitHub CI runs 39776147509 and 39776153492 passed.
+- No remotely pushed Phase 3 dashboard totals, Admin CSV export or 1,001-record testing existed at this recovery checkpoint.
+- Local Desktop Commander devices were offline. No uncommitted device workspace was inspected or modified.
+- Supabase connector is responsive, but project list in organization `uuwjtdflyyatqdsqqcbz` contained NEXORA-COMMERCE, YASHIKA-COMPUTERS, an unrelated email-labelled project and Open-Chet; no Creator Collaboration project. No database was changed.
+
+## New source changes
+- Migration 5 (`20261022123600_workspace_metrics.sql`) adds SECURITY INVOKER, RLS-visible `workspace_metrics()` with correct full-table counts and currency aggregates beyond the 1,000-row PostgREST response limit.
+- Creator Overview, Admin summary and Earnings now use actual database totals. Earnings details are paginated 25 per page. Admin pending work queries cap displayed rows at 50 explicitly, without misrepresenting those rows as overall totals.
+- Embedded PostgreSQL 1,001-record simulation verifies Admin/Creator aggregate correctness, creator isolation, denied anonymous access and inactive-user rejection. Test records are disposable and labelled SIMULATED, not production payments.
+- Authenticated Admin-only `/api/admin/export?kind=...` delivers Applications, Payments, Shipping and Audit CSV. Every export uses a fixed field allow-list, per-row spreadsheet formula-injection escaping, non-cacheable attachment headers, exact database row count and a 5,000-record hard refusal (no silent truncation).
+- CSV helper and negative dataset/escaping tests; isolated Product and Voice Over scenarios now cover fulfillment, private script/media, revision ceiling, approval, pending payment and denied cross-creator actions.
+- Admin media review selects an audio player for Voice Over and a video player for Product clips; unknown types fall back to the signed original link. Added relation-shape tests. Admin history uses exact count-enabled pagination instead of inferring next pages from 25 returned rows.
+
+## Verification
+- Phase 4 full GitHub CI green at `a9b402330c0d0f6be6cefb2e7e0685eca0ad4d90` (runs 39781351585 and 39781357974).
+- The later media/history commit and this documentation/security gate commit require checking their own CI conclusions. No local uncommitted work or local Windows build is claimed.
+- CI includes TypeScript, lint, isolated PGlite tests, PostgreSQL 17 concurrency tests, Next production build, HTTP checks and public-page Playwright desktop/mobile emulation.
+- Hosted Supabase Auth, private Storage, email, Android hardware and authenticated browser acceptance remain NOT TESTED; no preview or production deployment exists.
+- A previous Astra report described a Turbopack cache problem. Fresh GitHub CI production builds succeed; original local cache and logs were unavailable, so a stale cache is a possibility, not a verified root cause.
+
+## Current blockers
+- Dedicated Supabase project selection, any new-resource billing approval, credentials and test accounts.
+- Authenticated end-to-end hosted testing and Vercel preview tied to the dedicated backend.
+- The npm development-only `braces@3.0.3` advisory GHSA-vfj7-8cjw-p6xm has no published patch as checked on 2026-10-22. See SECURITY_AUDIT.md for risk assessment.
+- Current Admin search only filters the newest 50 pending records; a server-side full-history search is future work.
+- There is no automated payout or production PAID marking in development. External transfers are manual.
+
+---
+
 # Phase 3 checkpoint — 2026-10-22
 
 Continuation base: `28f7da333928a71ca92a9f63ae7aec60a468fb7c`. Phase 2 source CI was verified green on `42cf32c2dbbfdf6bedddc1447acd75ae9f7bf48f`, run 39737437928.
