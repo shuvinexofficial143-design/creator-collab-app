@@ -5,6 +5,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { account } from "@/lib/auth";
 import { money } from "@/lib/config";
+import { readWorkspaceMetrics } from "@/lib/workspace-metrics";
 import { ActionForm } from "@/components/action-form";
 import { ProjectForm } from "@/components/project-form";
 import { mutate } from "../actions";
@@ -24,14 +25,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string }>;
+  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; earnings_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history", "cleanup"].includes(section),
   );
-  const { kind, history_page, admin_search } = await searchParams;
+  const { kind, history_page, admin_search, earnings_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -191,28 +192,33 @@ export default async function Section({
     );
   }
   if (section === "earnings") {
-    const { data, error } = await client.from("payments").select("*");
+    const metrics = await readWorkspaceMetrics(client);
+    const page = earnings_page && /^[1-9][0-9]{0,2}$/.test(earnings_page)
+      ? Number(earnings_page) : 1;
+    const pageSize = 25;
+    const { data, error } = await client
+      .from("payments")
+      .select("*")
+      .order("id", { ascending: false })
+      .range((page - 1) * pageSize, page * pageSize - 1);
     if (error) throw Error("Payments unavailable");
     return (
       <>
         {heading}
         <p>
           Actual transfers happen manually outside this app. A payment is marked
-          paid only after an Admin records it.
+          paid only after an Admin records it. Totals include all authorized
+          payment records, not just the visible page.
         </p>
         <div className="grid three">
           {[
-            ["Approved earnings", data],
-            ["Pending payment", data.filter((p) => p.status !== "PAID")],
-            ["Actually paid", data.filter((p) => p.status === "PAID")],
-          ].map(([label, rows]) => (
+            ["Approved earnings", metrics.approved_earnings_paise],
+            ["Pending payment", metrics.pending_earnings_paise],
+            ["Actually paid", metrics.paid_earnings_paise],
+          ].map(([label, amount]) => (
             <article className="panel stat" key={String(label)}>
               <span>{String(label)}</span>
-              <strong>
-                {money(
-                  (rows as typeof data).reduce((s, p) => s + p.amount_paise, 0),
-                )}
-              </strong>
+              <strong>{money(Number(amount))}</strong>
             </article>
           ))}
         </div>
@@ -222,32 +228,40 @@ export default async function Section({
             <span className="tag">{p.status}</span>
             <span>
               {p.reference || "Awaiting transfer"}
-              {p.paid_at &&
-                ` · ${new Date(p.paid_at).toLocaleDateString("en-IN")}`}
+              {p.paid_at && ` · ${new Date(p.paid_at).toLocaleDateString("en-IN")}`}
             </span>
           </article>
         ))}
-        {!data.length && (
+        {!metrics.payable_count && (
           <Empty text="No approved earnings yet. They appear after your work is approved." />
         )}
+        <nav className="filters" aria-label="Earnings history pages">
+          {page > 1 && <Link href={`/workspace/earnings?earnings_page=${page - 1}`}>← Previous</Link>}
+          <span>Page {page} · {metrics.payable_count} total records</span>
+          {page * pageSize < metrics.payable_count && (
+            <Link href={`/workspace/earnings?earnings_page=${page + 1}`}>Next →</Link>
+          )}
+        </nav>
       </>
     );
   }
-  const results = await Promise.all([
+  const [metrics, results] = await Promise.all([readWorkspaceMetrics(client), Promise.all([
     client
       .from("applications")
       .select("*,projects(title),profiles(full_name)")
-      .eq("status", "PENDING"),
-    client.from("payments").select("*").neq("status", "PAID"),
-    client.from("profiles").select("id,full_name,role,active"),
-    client.from("submissions").select("*").eq("status", "SUBMITTED"),
-    client.from("shipping").select("*").eq("status", "READY"),
+      .eq("status", "PENDING")
+      .order("created_at", { ascending: false })
+      .limit(50),
+    client.from("payments").select("*").neq("status", "PAID").order("id", { ascending: false }).limit(50),
+    client.from("profiles").select("id,full_name,role,active").order("created_at", { ascending: false }).limit(50),
+    client.from("submissions").select("*").eq("status", "SUBMITTED").order("created_at", { ascending: false }).limit(50),
+    client.from("shipping").select("*").eq("status", "READY").order("assignment_id", { ascending: false }).limit(50),
     client.from("assignments")
       .select("id,status,delivery_deadline,projects(title)")
       .neq("status", "APPROVED")
       .order("created_at", { ascending: false })
       .limit(50),
-  ]);
+  ])]);
   if (results.some((r) => r.error)) throw Error("Admin records unavailable");
   const [applications, payments, creators, submissions, shipping, deadlines] = results;
   const search = String(admin_search || "").trim().toLowerCase().slice(0, 80);
@@ -262,10 +276,11 @@ export default async function Section({
     <>
       {heading}
       <p>Review applications, manage briefs, and record completed transfers.</p>
+      <p className="subtle">Dashboard totals count all authorized records. Work queues show only their 50 newest entries.</p>
       <div className="grid three">
-        <Stat label="Pending applications" value={applications.data!.length} />
-        <Stat label="Awaiting review" value={submissions.data!.length} />
-        <Stat label="Outstanding payments" value={payments.data!.length} />
+        <Stat label="Pending applications" value={metrics.pending_applications} />
+        <Stat label="Awaiting review" value={metrics.awaiting_review} />
+        <Stat label="Outstanding payments" value={metrics.outstanding_payments} />
       </div>
       <details className="panel">
         <summary>Create a project</summary>

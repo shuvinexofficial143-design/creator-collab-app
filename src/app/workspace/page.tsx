@@ -1,21 +1,10 @@
 import Link from "next/link";
 import { account } from "@/lib/auth";
 import { money } from "@/lib/config";
+import { readWorkspaceMetrics } from "@/lib/workspace-metrics";
 export default async function Overview() {
   const { client, profile } = await account();
-  const results = await Promise.all([
-    client
-      .from("applications")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "PENDING"),
-    client
-      .from("assignments")
-      .select("id", { count: "exact", head: true })
-      .neq("status", "APPROVED"),
-    client.from("payments").select("amount_paise,status"),
-  ]);
-  if (results.some((r) => r.error)) throw Error("Could not load workspace");
-  const payments = results[2].data || [];
+  const metrics = await readWorkspaceMetrics(client);
   return (
     <>
       <span className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</span>
@@ -23,15 +12,11 @@ export default async function Overview() {
       <p>Here is where your collaborations stand today.</p>
       <div className="grid three">
         {[
-          ["Pending applications", results[0].count || 0],
-          ["Active assignments", results[1].count || 0],
+          ["Pending applications", metrics.pending_applications],
+          ["Active assignments", metrics.active_assignments],
           [
             "Actually paid",
-            money(
-              payments
-                .filter((p) => p.status === "PAID")
-                .reduce((s, p) => s + p.amount_paise, 0),
-            ),
+            money(metrics.paid_earnings_paise),
           ],
         ].map(([label, value]) => (
           <article className="panel stat" key={label}>
