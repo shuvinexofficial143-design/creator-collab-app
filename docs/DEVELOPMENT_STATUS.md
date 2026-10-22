@@ -2,8 +2,8 @@
 
 ## Previous verified GitHub checkpoint
 
-`17b887da7cc6e71a1935e721348953789ad1c80c` on `feature/creator-platform-mvp`.
-The current follow-up adds structured briefs, media, operations history, sample templates, account controls and more tests. Its commit SHA is available in Git history; this document records the previous verified SHA rather than a self-referential hash.
+`f7c90efcf577090d1fdbc611f27f020e2c22e23d` on `feature/creator-platform-mvp`.
+This code checkpoint passed GitHub CI run 39733894255, including all six desktop/mobile Chromium public-page checks. The final follow-up only records these verified results in documentation.
 
 ## Implemented in source
 
@@ -25,9 +25,9 @@ The current follow-up adds structured briefs, media, operations history, sample 
 - PASSED: TypeScript, ESLint, production build (Next.js 16.4.2).
 - PASSED: 4 automated test cases including a PostgreSQL integration scenario with multiple assertions: permissions, role escalation denial, creator isolation, private scripts, duplicate application, capacity, revision cycle, paid-reference validation, duplicate payment, notification ownership, suspension, product media and shipping transitions.
 - PASSED: production HTTP smoke checks for landing/login/register/forgot and protected-route setup redirects, with security header checks.
-- BLOCKED: local Playwright visual/browser execution — Chromium download returned truncated/invalid ZIP archives. Browser tests are committed for CI; no screenshots or device verification claimed.
+- PASSED IN GITHUB CI: 6 Playwright checks across desktop and mobile Chromium emulation: landing/navigation/no horizontal overflow, protected setup redirect, and login configuration feedback. Local Chromium installation was blocked by invalid ZIP downloads. Real Android/iOS devices and authenticated business flows remain untested.
 - BLOCKED: hosted Supabase Auth/Storage/email E2E and security advisors — dedicated app project not configured.
-- GitHub CI on 17b887d passed install, TypeScript, lint, database tests, production build and HTTP smoke. Chromium installed successfully in CI; 4 of 6 browser checks passed. Two failed because the login assertion matched both the form alert and Next.js route announcer. The assertion is now scoped to the form; the follow-up run is pending verification.
+- PASSED: GitHub CI run 39733894255 on f7c90ef (install, TypeScript, lint, database tests, production build, HTTP smoke, browser tests). The initial test-selector ambiguity was fixed and the complete run passed.
 - Deployment: NOT DEPLOYED.
 
 ## Remaining gaps / limitations
