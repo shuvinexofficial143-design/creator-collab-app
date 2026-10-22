@@ -14,9 +14,12 @@
 - CSV helper and negative dataset/escaping tests; isolated Product and Voice Over scenarios now cover fulfillment, private script/media, revision ceiling, approval, pending payment and denied cross-creator actions.
 - Admin media review selects an audio player for Voice Over and a video player for Product clips; unknown types fall back to the signed original link. Added relation-shape tests. Admin history uses exact count-enabled pagination instead of inferring next pages from 25 returned rows.
 
+- Admin work queues now paginate across 50-entry pages rather than showing only the initial 50. Counts remain database-backed; on-page keyword search is explicitly limited to the displayed page.
+- Added independent HTTP and Playwright checks that the private CSV export fails closed with HTTP 503 and no-store headers when the Supabase backend is not configured.
+
 ## Verification
-- Phase 4 full GitHub CI green at `a9b402330c0d0f6be6cefb2e7e0685eca0ad4d90` (runs 39781351585 and 39781357974).
-- The later media/history commit and this documentation/security gate commit require checking their own CI conclusions. No local uncommitted work or local Windows build is claimed.
+- Phase 4 full GitHub CI green at `cf6b388efc6b14c4785e6846d35752c98fdb1e21` (run 39783066473), including npm production-dependency audit, typecheck, lint, isolated SQL/business tests, Next build, HTTP smoke, and Playwright browser checks. Earlier Phase 4 commits were also verified green.
+- Final documentation-only checkpoint does not alter executable code. No local uncommitted work or Windows machine testing is claimed.
 - CI includes TypeScript, lint, isolated PGlite tests, PostgreSQL 17 concurrency tests, Next production build, HTTP checks and public-page Playwright desktop/mobile emulation.
 - Hosted Supabase Auth, private Storage, email, Android hardware and authenticated browser acceptance remain NOT TESTED; no preview or production deployment exists.
 - A previous Astra report described a Turbopack cache problem. Fresh GitHub CI production builds succeed; original local cache and logs were unavailable, so a stale cache is a possibility, not a verified root cause.
@@ -25,7 +28,7 @@
 - Dedicated Supabase project selection, any new-resource billing approval, credentials and test accounts.
 - Authenticated end-to-end hosted testing and Vercel preview tied to the dedicated backend.
 - The npm development-only `braces@3.0.3` advisory GHSA-vfj7-8cjw-p6xm has no published patch as checked on 2026-10-22. See SECURITY_AUDIT.md for risk assessment.
-- Current Admin search only filters the newest 50 pending records; a server-side full-history search is future work.
+- Current Admin search filters the currently selected 50-row page only. Admin can navigate older queue pages; database-wide keyword search is future work.
 - There is no automated payout or production PAID marking in development. External transfers are manual.
 
 ---
