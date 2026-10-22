@@ -16,6 +16,7 @@ export async function mutate(
       "payment",
       "dispatch",
       "creator_status",
+      "extend_deadline",
     ].includes(op),
   );
   const raw = String(form.get("target") || "");
@@ -45,6 +46,12 @@ export async function mutate(
       };
     payload = { ...parsed.data, details: details.data };
   }
+  if (op === "extend_deadline") {
+    const deadline = new Date(String(payload.deadline || ""));
+    if (Number.isNaN(deadline.getTime()))
+      return { error: "Select a valid delivery deadline." };
+    payload = { deadline: deadline.toISOString() };
+  }
   const { error } = await client.rpc("workflow", {
     op,
     target: raw || null,
@@ -63,6 +70,12 @@ export async function mutate(
       "Address cannot be changed after dispatch",
       "Complete delivery address required",
       "Product has not been dispatched",
+      "Accepted brief terms are locked",
+      "Revision limit reached",
+      "Delivery deadline passed",
+      "Confirm product delivery before submitting",
+      "Extension must be a later future deadline within one year",
+      "Assignment unavailable for extension",
     ];
     return {
       error:

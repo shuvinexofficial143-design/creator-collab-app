@@ -3,6 +3,7 @@ import { createBrowserClient } from "@supabase/ssr";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { validateUpload } from "@/lib/validation";
+import { finalizeUploadedMedia } from "@/lib/upload-finalize";
 export function Upload({
   assignment,
   kind,
@@ -40,15 +41,15 @@ export function Upload({
         .from("submissions")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw Error("Upload failed. Try again.");
-      const result = await client.rpc("workflow", {
+      setMessage("Upload complete. Confirming your submission…");
+      await finalizeUploadedMedia(client, {
+        bucket: "submissions",
+        table: "submissions",
         op: "submit",
         target: assignment,
+        path,
         payload: { storage_path: path, note: form.get("note") },
       });
-      if (result.error)
-        throw Error(
-          "File uploaded, but submission could not be saved. Refresh and try again.",
-        );
       setMessage("Submitted for review.");
       router.refresh();
     } catch (error) {

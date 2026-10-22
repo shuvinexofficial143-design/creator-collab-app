@@ -2,6 +2,7 @@
 import { createBrowserClient } from "@supabase/ssr";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { finalizeUploadedMedia } from "@/lib/upload-finalize";
 export function MediaUpload({ project }: { project: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -38,17 +39,19 @@ export function MediaUpload({ project }: { project: string }) {
         .from("project-media")
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw Error("Upload failed.");
-      const result = await client.rpc("workflow", {
+      setMessage("Upload complete. Linking media…");
+      await finalizeUploadedMedia(client, {
+        bucket: "project-media",
+        table: "project_media",
         op: "media",
         target: project,
+        path,
         payload: {
           storage_path: path,
           mime_type: file.type,
           caption: form.get("caption"),
         },
       });
-      if (result.error)
-        throw Error("Media uploaded but could not be attached.");
       setMessage("Media added.");
       router.refresh();
     } catch (error) {

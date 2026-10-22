@@ -41,6 +41,12 @@ export default async function Project({
     .select("script")
     .eq("project_id", id)
     .maybeSingle();
+  // Accepted briefs stay fixed even when the project remains visible.
+  const agreed = w?.agreed_brief && Object.keys(w.agreed_brief).length
+    ? w.agreed_brief
+    : null;
+  const brief = agreed || p;
+  const scriptText = agreed ? w.agreed_script || "" : script?.script || "";
   const shipping = w
     ? (
         await client
@@ -72,38 +78,38 @@ export default async function Project({
       <div className="grid two">
         <article className="panel">
           <h2>The brief</h2>
-          <p className="pre">{p.description}</p>
+          <p className="pre">{brief.description}</p>
           <h3>Recording instructions</h3>
           <p className="pre">
-            {p.instructions || "Follow the project description."}
+            {brief.instructions || "Follow the project description."}
           </p>
-          {p.details && (
+          {brief.details && (
             <>
               <h3>Project details</h3>
               <p>
-                {p.details.category} · {p.details.duration_seconds || "—"}{" "}
-                seconds · {p.details.revision_limit ?? "—"} included revisions
+                {brief.details.category} · {brief.details.duration_seconds || "—"}{" "}
+                seconds · {brief.details.revision_limit ?? "—"} included revisions
               </p>
               {p.kind === "VOICE" && (
                 <p>
-                  {p.details.voice_tone} · {p.details.audio_format}
+                  {brief.details.voice_tone} · {brief.details.audio_format}
                 </p>
               )}
-              {p.details.delivery_deadline && (
+              {(w?.delivery_deadline || brief.details.delivery_deadline) && (
                 <p>
                   Delivery:{" "}
-                  {new Date(p.details.delivery_deadline).toLocaleString(
+                  {new Date(w?.delivery_deadline || brief.details.delivery_deadline).toLocaleString(
                     "en-IN",
                     { timeZone: "Asia/Kolkata" },
                   )}{" "}
                   IST
                 </p>
               )}
-              {p.details.reference_url &&
-                /^https?:\/\//i.test(p.details.reference_url) && (
+              {brief.details.reference_url &&
+                /^https?:\/\//i.test(brief.details.reference_url) && (
                   <a
                     className="textlink"
-                    href={p.details.reference_url}
+                    href={brief.details.reference_url}
                     target="_blank"
                     rel="noreferrer"
                   >
@@ -113,7 +119,7 @@ export default async function Project({
             </>
           )}
           <h3>Usage & revision terms</h3>
-          <p className="pre">{p.usage_terms}</p>
+          <p className="pre">{brief.usage_terms}</p>
         </article>
         <article className="panel">
           <span className="eyebrow">PROJECT PAYMENT</span>
@@ -210,10 +216,10 @@ export default async function Project({
           <h2>
             Your assignment <span className="tag">{w.status}</span>
           </h2>
-          {script?.script && (
+          {scriptText && (
             <article className="panel">
               <h3>Your assigned script</h3>
-              <p className="pre">{script.script}</p>
+              <p className="pre">{scriptText}</p>
             </article>
           )}
           {shipping && (

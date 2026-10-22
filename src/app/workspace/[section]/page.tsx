@@ -239,9 +239,14 @@ export default async function Section({
     client.from("profiles").select("id,full_name,role,active"),
     client.from("submissions").select("*").eq("status", "SUBMITTED"),
     client.from("shipping").select("*").eq("status", "READY"),
+    client.from("assignments")
+      .select("id,status,delivery_deadline,projects(title)")
+      .neq("status", "APPROVED")
+      .order("created_at", { ascending: false })
+      .limit(50),
   ]);
   if (results.some((r) => r.error)) throw Error("Admin records unavailable");
-  const [applications, payments, creators, submissions, shipping] = results;
+  const [applications, payments, creators, submissions, shipping, deadlines] = results;
   return (
     <>
       {heading}
@@ -356,6 +361,32 @@ export default async function Section({
             <label>
               Tracking number
               <input name="tracking" required minLength={2} />
+            </label>
+          </ActionForm>
+        </article>
+      ))}
+      <h2>Assignment delivery deadlines</h2>
+      <p className="subtle">
+        Extensions are recorded in the audit trail and notify the creator.
+        Enter an explicitly agreed new UTC deadline.
+      </p>
+      {deadlines.data!.map((a) => (
+        <article className="panel" key={a.id}>
+          <strong>{a.projects?.title || "Assigned project"}</strong>
+          <p>
+            {a.status} · Current deadline:{" "}
+            {a.delivery_deadline
+              ? new Date(a.delivery_deadline).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" }) + " IST"
+              : "Not yet set (legacy assignment)"}
+          </p>
+          <ActionForm
+            action={mutate.bind(null, "extend_deadline")}
+            label="Extend deadline"
+          >
+            <input type="hidden" name="target" value={a.id} />
+            <label>
+              New delivery deadline (UTC)
+              <input name="deadline" type="datetime-local" required />
             </label>
           </ActionForm>
         </article>
