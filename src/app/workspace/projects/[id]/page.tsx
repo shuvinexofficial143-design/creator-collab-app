@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { MediaUpload } from "@/components/media-upload";
 import { notFound } from "next/navigation";
 import { account } from "@/lib/auth";
@@ -10,10 +11,15 @@ import { Upload } from "@/components/upload";
 import { mutate } from "../../actions";
 export default async function Project({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ submissions_page?: string }>;
 }) {
   const { id } = await params;
+  const { submissions_page } = await searchParams;
+  const historyPage = submissions_page && /^[1-9][0-9]{0,2}$/.test(submissions_page)
+    ? Number(submissions_page) : 1;
   if (!uuid.safeParse(id).success) notFound();
   const { client, profile, user } = await account();
   const { data: p, error } = await client
@@ -63,6 +69,7 @@ export default async function Project({
           .select("*")
           .eq("assignment_id", w.id)
           .order("created_at", { ascending: false })
+          .range((historyPage - 1) * 10, historyPage * 10 - 1)
       ).data
     : [];
   const { data: media } = await client
@@ -284,6 +291,19 @@ export default async function Project({
               );
             }),
           )}
+          <nav className="filters" aria-label="Submission history pages">
+            {historyPage > 1 && (
+              <Link href={`/workspace/projects/${id}?submissions_page=${historyPage - 1}`}>
+                ← Previous submissions
+              </Link>
+            )}
+            <span>Submission history page {historyPage}</span>
+            {(submissions?.length || 0) === 10 && (
+              <Link href={`/workspace/projects/${id}?submissions_page=${historyPage + 1}`}>
+                Older submissions →
+              </Link>
+            )}
+          </nav>
         </>
       )}
     </>

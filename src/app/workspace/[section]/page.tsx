@@ -22,14 +22,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; history_page?: string }>;
+  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history"].includes(section),
   );
-  const { kind, history_page } = await searchParams;
+  const { kind, history_page, admin_search } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -247,6 +247,14 @@ export default async function Section({
   ]);
   if (results.some((r) => r.error)) throw Error("Admin records unavailable");
   const [applications, payments, creators, submissions, shipping, deadlines] = results;
+  const search = String(admin_search || "").trim().toLowerCase().slice(0, 80);
+  const filteredApplications = applications.data!.filter((a) =>
+    !search || [a.note, a.projects?.title, a.profiles?.full_name]
+      .some((value) => String(value || "").toLowerCase().includes(search)),
+  );
+  const filteredSubmissions = submissions.data!.filter((s) =>
+    !search || String(s.note || "").toLowerCase().includes(search),
+  );
   return (
     <>
       {heading}
@@ -280,8 +288,16 @@ export default async function Section({
           </details>
         ))}
       </details>
+      <form action="/workspace/admin" className="filters" method="get">
+        <label>
+          Search applications and submission notes
+          <input name="admin_search" maxLength={80} defaultValue={admin_search || ""} placeholder="Creator, project or note" />
+        </label>
+        <button type="submit">Search</button>
+        <Link href="/workspace/admin">Clear</Link>
+      </form>
       <h2>Incoming applications</h2>
-      {applications.data!.map((a) => (
+      {filteredApplications.map((a) => (
         <article className="panel" key={a.id}>
           <h3>
             {a.projects?.title} · {a.profiles?.full_name || "Creator"}
@@ -306,10 +322,10 @@ export default async function Section({
           </ActionForm>
         </article>
       ))}
-      {!applications.data!.length && <Empty text="No pending applications." />}
+      {!filteredApplications.length && <Empty text={search ? "No matching pending applications." : "No pending applications."} />}
       <h2>Work awaiting review</h2>
       {await Promise.all(
-        submissions.data!.map(async (s) => {
+        filteredSubmissions.map(async (s) => {
           const { data } = await client.storage
             .from("submissions")
             .createSignedUrl(s.storage_path, 300);
