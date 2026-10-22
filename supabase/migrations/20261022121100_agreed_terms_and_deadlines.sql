@@ -103,16 +103,16 @@ begin
   if op='decision' and payload->>'status'='APPROVED' then
     update public.assignments a
     set agreed_brief=jsonb_build_object(
-      'title',p.title,'description',p.description,'kind',p.kind,
-      'payment_paise',p.payment_paise,'instructions',p.instructions,
-      'language',p.language,'usage_terms',p.usage_terms,
-      'capacity',p.capacity,'deadline',p.deadline,'details',p.details
+      'title',pr.title,'description',pr.description,'kind',pr.kind,
+      'payment_paise',pr.payment_paise,'instructions',pr.instructions,
+      'language',pr.language,'usage_terms',pr.usage_terms,
+      'capacity',pr.capacity,'deadline',pr.deadline,'details',pr.details
     ),
     agreed_script=coalesce(ps.script,''),
-    delivery_deadline=nullif(p.details->>'delivery_deadline','')::timestamptz
-    from public.projects p
-    left join public.project_scripts ps on ps.project_id=p.id
-    where a.id=result and a.project_id=p.id;
+    delivery_deadline=nullif(pr.details->>'delivery_deadline','')::timestamptz
+    from public.projects pr
+    left join public.project_scripts ps on ps.project_id=pr.id
+    where a.id=result and a.project_id=pr.id;
   end if;
   return result;
 end $$;
