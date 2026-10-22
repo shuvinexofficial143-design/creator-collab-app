@@ -37,6 +37,13 @@ export async function AdminHistory({ page = 1 }: { page?: number }) {
       <p>
         Showing page {page} of each history section (25 records per section). Times are displayed in IST.
       </p>
+      <p>Admin CSV exports include the full dataset up to 5,000 records. Oversized exports are refused rather than truncated. Exports are private and never cached.</p>
+      <nav className="filters" aria-label="Admin CSV exports">
+        <Link href="/api/admin/export?kind=applications">Applications CSV</Link>
+        <Link href="/api/admin/export?kind=payments">Payments CSV</Link>
+        <Link href="/api/admin/export?kind=shipping">Shipping CSV</Link>
+        <Link href="/api/admin/export?kind=audit">Audit CSV</Link>
+      </nav>
       <h2>Application decisions</h2>
       {applications.data!.map((a) => (
         <article className="panel" key={a.id}>
