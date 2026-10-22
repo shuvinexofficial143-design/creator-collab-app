@@ -4,7 +4,7 @@ Next.js App Router, TypeScript, Supabase SSR cookie authentication, PostgreSQL R
 
 Server components call getUser and load active profiles. Admin pages and actions enforce ADMIN on the server. The database independently enforces active accounts and roles. No service-role client bypasses RLS.
 
-Tables: profiles, projects, project_scripts, applications, assignments, shipping, submissions, payments, notifications, audit_logs. Product and voice briefs share projects; scripts have separate RLS so browsing creators cannot read them. Product/catalog/media tables and structured advanced brief fields are not implemented yet.
+Tables: profiles, projects, project_scripts, project_media, applications, assignments, shipping, submissions, payments, notifications, audit_logs. Product and voice briefs share projects; scripts have separate RLS so browsing creators cannot read them. Projects carry structured brief details, and project_media records private product/reference uploads. A standalone reusable product catalog is not implemented; products are currently project-scoped.
 
 Mutations go through public.workflow (SECURITY INVOKER) into a private, fixed-search-path SECURITY DEFINER function. Direct table writes are revoked for authenticated users. The dispatcher obtains auth.uid(), checks active status and role/ownership, and locks affected rows before transitions. Approving an application snapshots payment into an assignment; approving work creates a unique payable. Paid rows cannot be completed again. Every submission version is retained as a separate submission row with its review feedback.
 

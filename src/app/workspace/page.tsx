@@ -1,4 +1,59 @@
-import Link from 'next/link';
-import {account} from '@/lib/auth';
-import {money} from '@/lib/config';
-export default async function Overview(){const {client,profile}=await account();const results=await Promise.all([client.from('applications').select('id',{count:'exact',head:true}).eq('status','PENDING'),client.from('assignments').select('id',{count:'exact',head:true}).neq('status','APPROVED'),client.from('payments').select('amount_paise,status')]);if(results.some(r=>r.error))throw Error('Could not load workspace');const payments=results[2].data||[];return <><span className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</span><h1>Hello, {profile.full_name||'creator'}.</h1><p>Here is where your collaborations stand today.</p><div className="grid three">{[['Pending applications',results[0].count||0],['Active assignments',results[1].count||0],['Actually paid',money(payments.filter(p=>p.status==='PAID').reduce((s,p)=>s+p.amount_paise,0))]].map(([label,value])=><article className="panel stat" key={label}><span>{label}</span><strong>{value}</strong></article>)}</div><div className="welcome panel"><span className="tag">LET’S MAKE SOMETHING GOOD</span><h2>A great collaboration starts<br/>with the right brief.</h2><p>Find product videos and voice over projects that suit your skills.</p><Link href="/workspace/projects" className="button">Explore available projects ↗</Link></div></>;}
+import Link from "next/link";
+import { account } from "@/lib/auth";
+import { money } from "@/lib/config";
+export default async function Overview() {
+  const { client, profile } = await account();
+  const results = await Promise.all([
+    client
+      .from("applications")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "PENDING"),
+    client
+      .from("assignments")
+      .select("id", { count: "exact", head: true })
+      .neq("status", "APPROVED"),
+    client.from("payments").select("amount_paise,status"),
+  ]);
+  if (results.some((r) => r.error)) throw Error("Could not load workspace");
+  const payments = results[2].data || [];
+  return (
+    <>
+      <span className="eyebrow">YOUR NEXT CHAPTER STARTS HERE</span>
+      <h1>Hello, {profile.full_name || "creator"}.</h1>
+      <p>Here is where your collaborations stand today.</p>
+      <div className="grid three">
+        {[
+          ["Pending applications", results[0].count || 0],
+          ["Active assignments", results[1].count || 0],
+          [
+            "Actually paid",
+            money(
+              payments
+                .filter((p) => p.status === "PAID")
+                .reduce((s, p) => s + p.amount_paise, 0),
+            ),
+          ],
+        ].map(([label, value]) => (
+          <article className="panel stat" key={label}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+          </article>
+        ))}
+      </div>
+      <div className="welcome panel">
+        <span className="tag">LET’S MAKE SOMETHING GOOD</span>
+        <h2>
+          A great collaboration starts
+          <br />
+          with the right brief.
+        </h2>
+        <p>
+          Find product videos and voice over projects that suit your skills.
+        </p>
+        <Link href="/workspace/projects" className="button">
+          Explore available projects ↗
+        </Link>
+      </div>
+    </>
+  );
+}

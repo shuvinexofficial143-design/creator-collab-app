@@ -1,7 +1,7 @@
 # Setup
 
 1. Use a dedicated Supabase project. None of the connected projects were identified as belonging to this app, so none were modified.
-2. Run the SQL in `supabase/migrations/20261022060834_creator_workflow.sql` in a new project's SQL editor, or apply with the installed Supabase CLI after following its `--help` and linking the correct project. The migration creates the private submissions bucket and policies. Never apply to an unrelated production project.
+2. Run both SQL files in `supabase/migrations/` in filename order in a new project's SQL editor, or apply with the installed Supabase CLI after following its `--help` and linking the correct project. The migrations create private submissions/project-media buckets and policies. Never apply to an unrelated production project.
 3. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. No service-role key is required by this application.
 4. Set APP_URL to the exact origin, e.g. http://localhost:3000 locally, and configure Supabase Auth Site URL and allowed redirect URLs including `/auth/callback` and `/auth/callback?next=/auth/reset`. Enable email confirmation and configure production SMTP.
 5. Register the owner using the app and confirm their email. In the trusted Supabase SQL editor, promote only the verified owner's user UUID: `update public.profiles set role = 'ADMIN' where id = '<verified-owner-user-uuid>';`. Do not use user_metadata or browser-controlled role settings. There is no public admin password.

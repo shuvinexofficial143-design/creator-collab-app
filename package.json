@@ -9,7 +9,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:browser": "playwright test",
+    "format": "prettier --write src tests *.ts *.mjs",
+    "test:http": "node tests/http-smoke.mjs"
   },
   "repository": {
     "type": "git",
@@ -17,7 +20,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "type": "module",
   "bugs": {
     "url": "https://github.com/shuvinexofficial143-design/creator-collab-app/issues"
@@ -41,9 +44,10 @@
     "@types/react-dom": "19.3.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.2",
+    "prettier": "3.9.10",
     "supabase": "2.121.0",
     "tsx": "4.23.15",
     "typescript": "6.0.3"
   },
-  "private": "true"
+  "private": true
 }
