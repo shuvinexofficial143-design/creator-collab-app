@@ -63,7 +63,7 @@ export async function POST(request: Request) {
 
   const { data: submission } = await client
     .from("submissions")
-    .select("id,assignment_id,storage_path,mime_type")
+    .select("id,assignment_id,storage_path")
     .eq("storage_path", path)
     .maybeSingle();
   if (!submission) return json({ error: "Submission unavailable." }, 404);
@@ -90,14 +90,15 @@ export async function POST(request: Request) {
     return json({ error: "Private file unavailable." }, 503);
 
   const { data: session } = await client.from("upload_sessions")
-    .select("byte_size").eq("path", path).eq("owner_id", user.id).maybeSingle();
+    .select("byte_size,mime_type").eq("path", path).eq("owner_id", user.id).maybeSingle();
+  const mime = session?.mime_type || "application/octet-stream";
 
   const caption = telegramCaption(project.title, project.kind);
   let delivered = false;
   let delivery: "file" | "link" = "link";
 
   // For small files, upload the actual bytes into the owner's Telegram.
-  if (telegramDeliveryMode(session?.byte_size ?? null, submission.mime_type) === "file") {
+  if (telegramDeliveryMode(session?.byte_size ?? null, mime) === "file") {
     try {
       const response = await fetch(signed.signedUrl, {
         cache: "no-store", signal: AbortSignal.timeout(20000),
@@ -107,13 +108,14 @@ export async function POST(request: Request) {
           15 * 1024 * 1024) {
         const bytes = await response.arrayBuffer();
         if (bytes.byteLength <= 15 * 1024 * 1024) {
-          const isMp4 = submission.mime_type === "video/mp4";
+          const isMp4 = mime === "video/mp4";
+          const extension = ({ "video/mp4":"mp4", "video/webm":"webm", "audio/mpeg":"mp3", "audio/mp4":"m4a", "audio/wav":"wav", "audio/x-wav":"wav", "audio/ogg":"ogg" } as Record<string,string>)[mime] || "bin";
           const body = new FormData();
           body.append("chat_id", chat);
           body.append("caption", caption);
           body.append(isMp4 ? "video" : "document",
-            new Blob([bytes], { type: submission.mime_type }),
-            `creator-submission.${isMp4 ? "mp4" : project.kind === "VOICE" ? "audio" : "webm"}`);
+            new Blob([bytes], { type: mime }),
+            `creator-submission.${extension}`);
           delivered = await botCall(token, isMp4 ? "sendVideo" : "sendDocument", body);
           if (delivered) delivery = "file";
         }
