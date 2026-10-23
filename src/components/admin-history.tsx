@@ -1,22 +1,15 @@
 import { account } from "@/lib/auth";
 import Link from "next/link";
-import { money } from "@/lib/config";
 export async function AdminHistory({ page = 1 }: { page?: number }) {
   const size = 25;
   const start = (page - 1) * size;
   const { client } = await account(true);
-  const [applications, payments, audits, shipping] = await Promise.all([
+  const [applications, audits, shipping] = await Promise.all([
     client
       .from("applications")
       .select("*,projects(title),profiles(full_name)", { count: "exact" })
       .neq("status", "PENDING")
       .order("created_at", { ascending: false })
-      .range(start, start + size - 1),
-    client
-      .from("payments")
-      .select("*", { count: "exact" })
-      .eq("status", "PAID")
-      .order("paid_at", { ascending: false })
       .range(start, start + size - 1),
     client
       .from("audit_logs")
@@ -30,7 +23,7 @@ export async function AdminHistory({ page = 1 }: { page?: number }) {
       .order("assignment_id", { ascending: false })
       .range(start, start + size - 1),
   ]);
-  if ([applications, payments, audits, shipping].some((r) => r.error))
+  if ([applications, audits, shipping].some((r) => r.error))
     throw Error("History unavailable");
   return (
     <>
@@ -40,7 +33,6 @@ export async function AdminHistory({ page = 1 }: { page?: number }) {
       <p>Admin CSV exports include the full dataset up to 5,000 records. Oversized exports are refused rather than truncated. Exports are private and never cached.</p>
       <nav className="filters" aria-label="Admin CSV exports">
         <Link href="/api/admin/export?kind=applications">Applications CSV</Link>
-        <Link href="/api/admin/export?kind=payments">Payments CSV</Link>
         <Link href="/api/admin/export?kind=shipping">Shipping CSV</Link>
         <Link href="/api/admin/export?kind=audit">Audit CSV</Link>
       </nav>
@@ -52,21 +44,6 @@ export async function AdminHistory({ page = 1 }: { page?: number }) {
           </h3>
           <span className="tag">{a.status}</span>
           <p>{a.reason || "Application approved"}</p>
-        </article>
-      ))}
-      <h2>Completed payments ({payments.count ?? "—"})</h2>
-      {payments.data!.map((p) => (
-        <article className="panel" key={p.id}>
-          <strong>{money(p.amount_paise)}</strong>
-          <p>
-            Reference: {p.reference}
-            <br />
-            Creator: {p.creator_id}
-            <br />
-            {new Date(p.paid_at).toLocaleString("en-IN", {
-              timeZone: "Asia/Kolkata",
-            })}
-          </p>
         </article>
       ))}
       <h2>Shipment history ({shipping.count ?? "—"})</h2>
