@@ -1,5 +1,6 @@
 import { ActionForm } from "./action-form";
 import { mutate } from "@/app/workspace/actions";
+import { formatISTInput } from "@/lib/ist-datetime";
 export type Project = {
   id: string;
   title: string;
@@ -81,12 +82,12 @@ export function ProjectForm({
           />
         </label>
         <label>
-          Application deadline (UTC)
+          Application deadline (IST)
           <input
             name="deadline"
             type="datetime-local"
             required
-            defaultValue={project?.deadline.slice(0, 16)}
+            defaultValue={formatISTInput(project?.deadline)}
           />
         </label>
       </div>
@@ -152,14 +153,12 @@ export function ProjectForm({
           />
         </label>
         <label>
-          Delivery deadline (UTC)
+          Delivery deadline (IST)
           <input
             name="delivery_deadline"
             type="datetime-local"
             required
-            defaultValue={String(
-              project?.details?.delivery_deadline || "",
-            ).slice(0, 16)}
+            defaultValue={formatISTInput(String(project?.details?.delivery_deadline || ""))}
           />
         </label>
         <label>

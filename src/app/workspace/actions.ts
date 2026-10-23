@@ -2,6 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { account } from "@/lib/auth";
 import { projectSchema, detailsSchema, uuid } from "@/lib/validation";
+import { parseISTInput } from "@/lib/ist-datetime";
 import type { Result } from "@/components/action-form";
 export async function mutate(
   op: string,
@@ -24,33 +25,33 @@ export async function mutate(
   let payload: Record<string, unknown> = Object.fromEntries(form.entries());
   delete payload.target;
   if (op === "project") {
-    const date = new Date(String(payload.deadline));
-    if (Number.isNaN(date.getTime()))
+    const date = parseISTInput(String(payload.deadline || ""));
+    if (!date)
       return { error: "Select a valid deadline." };
-    payload.deadline = date.toISOString();
+    payload.deadline = date;
     payload.payment_paise = Math.round(Number(payload.payment_rupees) * 100);
     const parsed = projectSchema.safeParse(payload);
     if (!parsed.success) return { error: parsed.error.issues[0].message };
-    const delivery = new Date(String(payload.delivery_deadline));
-    if (Number.isNaN(delivery.getTime()))
+    const delivery = parseISTInput(String(payload.delivery_deadline || ""));
+    if (!delivery)
       return { error: "Select a valid delivery deadline." };
     const details = detailsSchema.safeParse({
       ...payload,
-      delivery_deadline: delivery.toISOString(),
+      delivery_deadline: delivery,
       shipping_required: payload.shipping_required === "on",
     });
     if (!details.success) return { error: details.error.issues[0].message };
-    if (delivery <= date)
+    if (Date.parse(delivery) <= Date.parse(date))
       return {
         error: "Delivery deadline must be after the application deadline.",
       };
     payload = { ...parsed.data, details: details.data };
   }
   if (op === "extend_deadline") {
-    const deadline = new Date(String(payload.deadline || ""));
-    if (Number.isNaN(deadline.getTime()))
+    const deadline = parseISTInput(String(payload.deadline || ""));
+    if (!deadline)
       return { error: "Select a valid delivery deadline." };
-    payload = { deadline: deadline.toISOString() };
+    payload = { deadline };
   }
   const { error } = await client.rpc("workflow", {
     op,

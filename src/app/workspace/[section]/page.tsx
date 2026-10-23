@@ -415,7 +415,7 @@ export default async function Section({
       <h2>Assignment delivery deadlines</h2>
       <p className="subtle">
         Extensions are recorded in the audit trail and notify the creator.
-        Enter an explicitly agreed new UTC deadline.
+        Enter an explicitly agreed new IST deadline.
       </p>
       {deadlines.data!.map((a) => (
         <article className="panel" key={a.id}>
@@ -432,7 +432,7 @@ export default async function Section({
           >
             <input type="hidden" name="target" value={a.id} />
             <label>
-              New delivery deadline (UTC)
+              New delivery deadline (IST)
               <input name="deadline" type="datetime-local" required />
             </label>
           </ActionForm>
