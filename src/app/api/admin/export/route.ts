@@ -17,6 +17,7 @@ export async function GET(request: NextRequest) {
   if (!configured()) return deny(503, "Creator Collab backend is not configured.");
   const kind = request.nextUrl.searchParams.get("kind");
   if (!isExportKind(kind)) return deny(400, "Unknown export dataset.");
+  if (kind === "payments") return deny(404, "Private workspace does not offer payment exports.");
   const client = await db();
   const { data: { user }, error: authError } = await client.auth.getUser();
   if (authError || !user) return deny(401, "Sign in required.");
