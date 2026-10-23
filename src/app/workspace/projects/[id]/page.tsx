@@ -3,7 +3,6 @@ import Link from "next/link";
 import { MediaUpload } from "@/components/media-upload";
 import { notFound } from "next/navigation";
 import { account } from "@/lib/auth";
-import { money } from "@/lib/config";
 import { uuid } from "@/lib/validation";
 import { ActionForm } from "@/components/action-form";
 import { ProjectForm } from "@/components/project-form";
@@ -129,11 +128,9 @@ export default async function Project({
           <p className="pre">{brief.usage_terms}</p>
         </article>
         <article className="panel">
-          <span className="eyebrow">PROJECT PAYMENT</span>
-          <h2>{money(w?.payment_paise ?? p.payment_paise)}</h2>
-          <p>
-            {p.capacity} creator slot(s) · {p.language}
-          </p>
+          <span className="eyebrow">PROJECT DETAILS</span>
+          <h2>{p.kind === "VOICE" ? "Voice over" : "Product video"}</h2>
+          <p>{p.language} · Private creator assignment</p>
           <p>
             Applications close:{" "}
             {new Date(p.deadline).toLocaleString("en-IN", {
