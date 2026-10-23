@@ -85,7 +85,7 @@ export async function AdminHistory({ page = 1 }: { page?: number }) {
       <nav className="filters" aria-label="History pagination">
         {page > 1 && <Link href={`/workspace/history?history_page=${page - 1}`}>← Previous page</Link>}
         <span>Page {page}</span>
-        {[applications, payments, audits, shipping].some((r) =>
+        {[applications, audits, shipping].some((r) =>
           r.count !== null && r.count > page * size
         ) && (
           <Link href={`/workspace/history?history_page=${page + 1}`}>Next page →</Link>
