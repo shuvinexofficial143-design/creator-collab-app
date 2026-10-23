@@ -265,7 +265,7 @@ export function ReliableUpload({
       <form onSubmit={submit}>
         <label>
           {media
-            ? "Product image / reference file"
+            ? "Product image"
             : kind === "VOICE"
               ? "Audio recording"
               : "Product video"}
@@ -276,7 +276,7 @@ export function ReliableUpload({
             disabled={stage !== "idle"}
             accept={
               media
-                ? ".jpg,.jpeg,.png,.webp,.mp4,.webm,.mp3,.wav,.m4a,.ogg"
+                ? ".jpg,.jpeg,.png,.webp"
                 : kind === "VOICE"
                   ? ".mp3,.wav,.m4a,.ogg"
                   : ".mp4,.webm"
@@ -296,7 +296,7 @@ export function ReliableUpload({
             ? "MP3, WAV, M4A or OGG"
             : kind === "PRODUCT"
               ? "MP4 or WebM"
-              : "JPG, PNG, WebP, MP4, WebM, MP3, WAV, M4A or OGG"}
+              : "JPG, PNG or WebP (reference videos come from YouTube)"}
         </small>
         <label>
           {media ? "Caption" : "Submission note"}
