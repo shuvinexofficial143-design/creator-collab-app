@@ -1,5 +1,5 @@
 import {CleanupPanel} from "@/components/cleanup-panel";
-import { projectKindFromSubmission } from "@/lib/submission-media";
+import { pendingApplications, pendingSubmissions } from "@/lib/admin-search";
 import { sampleProject } from "@/lib/samples";
 import { AdminHistory } from "@/components/admin-history";
 import Link from "next/link";
@@ -26,14 +26,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; admin_page?: string; earnings_page?: string }>;
+  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; admin_page?: string; app_page?: string; review_page?: string; earnings_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history", "cleanup"].includes(section),
   );
-  const { kind, history_page, admin_search, admin_page, earnings_page } = await searchParams;
+  const { kind, history_page, admin_search, admin_page, app_page, review_page, earnings_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -246,42 +246,32 @@ export default async function Section({
       </>
     );
   }
-  const adminPage = admin_page && /^[1-9][0-9]{0,2}$/.test(admin_page) ? Number(admin_page) : 1;
+  const parsePage = (value?: string) => value && /^[1-9][0-9]{0,2}$/.test(value) ? Number(value) : 1;
+  const adminPage = parsePage(admin_page);
+  const appPage = parsePage(app_page);
+  const reviewPage = parsePage(review_page);
   const adminPageSize = 50;
   const adminStart = (adminPage - 1) * adminPageSize;
-  const [metrics, results] = await Promise.all([readWorkspaceMetrics(client), Promise.all([
-    client
-      .from("applications")
-      .select("*,projects(title),profiles(full_name)", { count: "exact" })
-      .eq("status", "PENDING")
-      .order("created_at", { ascending: false })
-      .range(adminStart, adminStart + adminPageSize - 1),
-    client.from("payments").select("*", { count: "exact" }).neq("status", "PAID").order("id", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
-    client.from("profiles").select("id,full_name,role,active", { count: "exact" }).order("created_at", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
-    client.from("submissions").select("*,assignments(projects(kind))", { count: "exact" }).eq("status", "SUBMITTED").order("created_at", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
-    client.from("shipping").select("*", { count: "exact" }).eq("status", "READY").order("assignment_id", { ascending: false }).range(adminStart, adminStart + adminPageSize - 1),
-    client.from("assignments")
-      .select("id,status,delivery_deadline,projects(title)", { count: "exact" })
-      .neq("status", "APPROVED")
-      .order("created_at", { ascending: false })
-      .range(adminStart, adminStart + adminPageSize - 1),
-  ])]);
-  if (results.some((r) => r.error)) throw Error("Admin records unavailable");
-  const [applications, payments, creators, submissions, shipping, deadlines] = results;
-  const search = String(admin_search || "").trim().toLowerCase().slice(0, 80);
+  const search = String(admin_search || "").trim().slice(0,80);
   const searchSuffix = search ? `&admin_search=${encodeURIComponent(search)}` : "";
-  const filteredApplications = applications.data!.filter((a) =>
-    !search || [a.note, a.projects?.title, a.profiles?.full_name]
-      .some((value) => String(value || "").toLowerCase().includes(search)),
-  );
-  const filteredSubmissions = submissions.data!.filter((s) =>
-    !search || String(s.note || "").toLowerCase().includes(search),
-  );
+  const [metrics, applications, submissions, results] = await Promise.all([
+    readWorkspaceMetrics(client),
+    pendingApplications(client,search,appPage),
+    pendingSubmissions(client,search,reviewPage),
+    Promise.all([
+      client.from("payments").select("*",{count:"exact"}).neq("status","PAID").order("id",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
+      client.from("profiles").select("id,full_name,role,active",{count:"exact"}).order("created_at",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
+      client.from("shipping").select("*",{count:"exact"}).eq("status","READY").order("assignment_id",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
+      client.from("assignments").select("id,status,delivery_deadline,projects(title)",{count:"exact"}).neq("status","APPROVED").order("created_at",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
+    ]),
+  ]);
+  if (results.some((r)=>r.error)) throw Error("Admin records unavailable");
+  const [payments,creators,shipping,deadlines]=results;
   return (
     <>
       {heading}
       <p>Review applications, manage briefs, and record completed transfers.</p>
-      <p className="subtle">Dashboard totals include all authorized records. Work queues show 50 entries per page; search matches only the displayed page.</p>
+      <p className="subtle">Dashboard totals include all authorized records. Applications and reviews search the entire database on separate pages. Other queues display 50 entries per page.</p>
       <div className="grid three">
         <Stat label="Pending applications" value={metrics.pending_applications} />
         <Stat label="Awaiting review" value={metrics.awaiting_review} />
@@ -319,18 +309,11 @@ export default async function Section({
         <button type="submit">Search</button>
         <Link href="/workspace/admin">Clear</Link>
       </form>
-      <nav className="filters" aria-label="Admin work queue pagination">
-        {adminPage > 1 && <Link href={`/workspace/admin?admin_page=${adminPage - 1}${searchSuffix}`}>← Previous queue page</Link>}
-        <span>Work queue page {adminPage}</span>
-        {results.some((r) => r.count !== null && r.count > adminPage * adminPageSize) && (
-          <Link href={`/workspace/admin?admin_page=${adminPage + 1}${searchSuffix}`}>Next queue page →</Link>
-        )}
-      </nav>
       <h2>Incoming applications</h2>
-      {filteredApplications.map((a) => (
+      {applications.items.map((a) => (
         <article className="panel" key={a.id}>
           <h3>
-            {a.projects?.title} · {a.profiles?.full_name || "Creator"}
+            {a.project_title} · {a.creator_name || "Creator"}
           </h3>
           <p>{a.note}</p>
           <ActionForm
@@ -352,14 +335,19 @@ export default async function Section({
           </ActionForm>
         </article>
       ))}
-      {!filteredApplications.length && <Empty text={search ? "No matching pending applications on this page." : "No pending applications."} />}
+      {!applications.items.length && <Empty text={search ? "No matching pending applications." : "No pending applications."} />}
+      <nav className="filters" aria-label="Search application pages">
+        {appPage > 1 && <Link href={`/workspace/admin?app_page=${appPage-1}${searchSuffix}`}>← Previous applications</Link>}
+        <span>{applications.total} matching applications · Page {appPage}</span>
+        {appPage*25 < applications.total && <Link href={`/workspace/admin?app_page=${appPage+1}${searchSuffix}`}>Next applications →</Link>}
+      </nav>
       <h2>Work awaiting review</h2>
       {await Promise.all(
-        filteredSubmissions.map(async (s) => {
+        submissions.items.map(async (s) => {
           const { data } = await client.storage
             .from("submissions")
             .createSignedUrl(s.storage_path, 300);
-          const mediaKind = projectKindFromSubmission(s.assignments);
+          const mediaKind = s.media_kind;
           return (
             <article key={s.id} className="panel">
               <p>{s.note || "New submission"}</p>
@@ -398,6 +386,12 @@ export default async function Section({
           );
         }),
       )}
+      {!submissions.items.length && <Empty text={search ? "No matching submissions." : "No submissions awaiting review."} />}
+      <nav className="filters" aria-label="Search review pages">
+        {reviewPage > 1 && <Link href={`/workspace/admin?review_page=${reviewPage-1}${searchSuffix}`}>← Previous reviews</Link>}
+        <span>{submissions.total} matching reviews · Page {reviewPage}</span>
+        {reviewPage*25 < submissions.total && <Link href={`/workspace/admin?review_page=${reviewPage+1}${searchSuffix}`}>Next reviews →</Link>}
+      </nav>
       <h2>Ready for dispatch</h2>
       {shipping.data!.map((s) => (
         <article key={s.assignment_id} className="panel">
@@ -494,7 +488,7 @@ export default async function Section({
       ))}
       <nav className="filters" aria-label="Admin queue navigation">
         {adminPage > 1 && <Link href={`/workspace/admin?admin_page=${adminPage - 1}${searchSuffix}`}>← Previous</Link>}
-        <span>Page {adminPage} · {applications.count ?? "—"} pending applications / {submissions.count ?? "—"} awaiting review</span>
+        <span>Operational queues page {adminPage} · {payments.count ?? "—"} outstanding payments</span>
         {results.some((r) => r.count !== null && r.count > adminPage * adminPageSize) && (
           <Link href={`/workspace/admin?admin_page=${adminPage + 1}${searchSuffix}`}>Next →</Link>
         )}
