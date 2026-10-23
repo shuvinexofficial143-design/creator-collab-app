@@ -27,15 +27,15 @@ export default function Home() {
             brief, personal approval, and one place to track every step.
           </p>
           <div className="actions">
-            <Link className="button" href="/auth/register">
-              Join as a creator <ArrowUpRight size={18} />
+            <Link className="button" href="/auth/login">
+              Open creator workspace <ArrowUpRight size={18} />
             </Link>
             <Link className="textlink" href="#how">
               How it works ↓
             </Link>
           </div>
           <p className="subtle">
-            Applications are reviewed personally. No joining fee.
+            A private creator workspace. Access is arranged by the business owner.
           </p>
         </div>
         <div className="hero-art">
@@ -83,7 +83,7 @@ export default function Home() {
             ["Create", "Receive approval and follow your assigned brief."],
             [
               "Get reviewed",
-              "Submit work, resolve feedback and track recorded payments.",
+              "Submit work, review feedback and complete your collaboration.",
             ],
           ].map(([title, body]) => (
             <article key={title}>
@@ -95,8 +95,7 @@ export default function Home() {
         </div>
       </section>
       <footer>
-        © {new Date().getFullYear()} {brand} · Payments are recorded after
-        manual transfer.
+        © {new Date().getFullYear()} {brand} · Private creator collaboration.
       </footer>
     </main>
   );
