@@ -9,12 +9,12 @@ export async function mutate(
   _: Result,
   form: FormData,
 ): Promise<Result> {
+  if (op === "payment") return { error: "Payments are handled privately outside this app." };
   const { client } = await account(
     [
       "project",
       "decision",
       "review",
-      "payment",
       "dispatch",
       "creator_status",
       "extend_deadline",

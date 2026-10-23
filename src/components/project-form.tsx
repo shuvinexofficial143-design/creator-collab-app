@@ -58,29 +58,9 @@ export function ProjectForm({
         />
       </label>
       <div className="grid three">
-        <label>
-          Payment (₹)
-          <input
-            name="payment_rupees"
-            type="number"
-            min="0"
-            max="1000000"
-            step="0.01"
-            required
-            defaultValue={project ? project.payment_paise / 100 : 0}
-          />
-        </label>
-        <label>
-          Creator slots
-          <input
-            name="capacity"
-            type="number"
-            min="1"
-            max="100"
-            required
-            defaultValue={project?.capacity || 1}
-          />
-        </label>
+        {/* Existing SQL schema still requires a numeric value; private projects do not track payments. */}
+        <input type="hidden" name="payment_rupees" value={project ? project.payment_paise / 100 : 0} />
+        <input type="hidden" name="capacity" value={project?.capacity || 1} />
         <label>
           Application deadline (IST)
           <input
@@ -193,7 +173,7 @@ export function ProjectForm({
           />
         </label>
         <label>
-          Reference / example URL
+          YouTube reference video URL
           <input
             name="reference_url"
             type="url"
@@ -218,8 +198,7 @@ export function ProjectForm({
         </select>
       </label>
       <small>
-        Existing assignments keep their agreed payment. Project type is fixed
-        after creation.
+        Project type is fixed after creation. Accepted project terms remain locked.
       </small>
     </ActionForm>
   );

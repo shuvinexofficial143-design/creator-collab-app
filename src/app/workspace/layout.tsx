@@ -14,7 +14,6 @@ export default async function WorkspaceLayout({
     ["projects", "Explore projects"],
     ["applications", "Applications"],
     ["work", "My work"],
-    ["earnings", "Earnings"],
     ["notifications", "Updates"],
     ["profile", "Profile"],
   ];

@@ -16,3 +16,7 @@ Read [Setup](docs/SETUP.md), [Architecture](docs/ARCHITECTURE.md), [Development 
 ## Phase 5
 
 Admin-wide pending searches, project discovery, IST deadline handling and Android-emulated auth browser tests are implemented on the feature branch. The connected infrastructure does **not** yet include an authorized dedicated Creator Collab Supabase project, so this app is not ready for production use. After creating one with owner approval, apply all seven ordered SQL migrations and run `npm run preflight` before Vercel Preview testing. Never commit private environment keys.
+
+## Private single-creator pilot
+
+The development branch `feature/private-single-creator` provides invitation-only username/password access (two accounts: one Admin and one Creator), YouTube reference embeds, no in-app payment management, and server-side Telegram owner delivery after a private submission is saved. See [Private Creator Setup](docs/PRIVATE_CREATOR_SETUP.md). This feature is not live or production-verified; configure a dedicated Supabase backend and private Telegram credentials before acceptance testing.

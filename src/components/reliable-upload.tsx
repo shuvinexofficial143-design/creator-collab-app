@@ -106,9 +106,26 @@ export function ReliableUpload({
         ...session.payload,
       },
     });
-    setMessage(
-      media ? "Media attached successfully." : "Submitted for review.",
-    );
+    if (media) {
+      setMessage("Media attached successfully.");
+    } else {
+      // The submission is saved before the owner is notified. Telegram failure
+      // must never erase the Creator's completed work.
+      try {
+        const response = await fetch("/api/owner-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storage_path: session.path }),
+        });
+        setMessage(
+          response.ok
+            ? "Submitted and privately delivered to the owner for review."
+            : "Submitted successfully. Owner delivery is pending; please contact the owner.",
+        );
+      } catch {
+        setMessage("Submitted successfully. Owner delivery is pending; please contact the owner.");
+      }
+    }
     router.refresh();
   }
   async function status(id: string) {
@@ -248,7 +265,7 @@ export function ReliableUpload({
       <form onSubmit={submit}>
         <label>
           {media
-            ? "Product image / reference file"
+            ? "Product image"
             : kind === "VOICE"
               ? "Audio recording"
               : "Product video"}
@@ -259,20 +276,27 @@ export function ReliableUpload({
             disabled={stage !== "idle"}
             accept={
               media
-                ? ".jpg,.jpeg,.png,.webp,.mp4,.webm,.mp3,.wav,.m4a,.ogg"
+                ? ".jpg,.jpeg,.png,.webp"
                 : kind === "VOICE"
                   ? ".mp3,.wav,.m4a,.ogg"
                   : ".mp4,.webm"
             }
           />
         </label>
+        {!media && (
+          <small>
+            Your submitted audio/video is shared privately with the business owner
+            through Telegram for review. Larger files may be delivered as an
+            expiring private download link.
+          </small>
+        )}
         <small>
           Maximum {media ? "50" : "100"} MiB · private storage ·{" "}
           {kind === "VOICE"
             ? "MP3, WAV, M4A or OGG"
             : kind === "PRODUCT"
               ? "MP4 or WebM"
-              : "JPG, PNG, WebP, MP4, WebM, MP3, WAV, M4A or OGG"}
+              : "JPG, PNG or WebP (reference videos come from YouTube)"}
         </small>
         <label>
           {media ? "Caption" : "Submission note"}
