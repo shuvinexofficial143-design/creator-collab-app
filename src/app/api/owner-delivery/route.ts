@@ -10,7 +10,7 @@ const json = (body: object, status = 200) =>
 async function botCall(
   token: string,
   method: "sendVideo" | "sendDocument" | "sendMessage",
-  body: FormData | Record<string, string>,
+  body: FormData | Record<string, string | boolean>,
 ) {
   const response = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
     method: "POST",
@@ -130,7 +130,7 @@ export async function POST(request: Request) {
       delivered = await botCall(token, "sendMessage", {
         chat_id: chat,
         text: `${caption}\nPrivate download (expires in 24 hours):\n${signed.signedUrl}`,
-        disable_web_page_preview: "true",
+        disable_web_page_preview: true,
       });
     } catch {
       delivered = false;
