@@ -1,0 +1,20 @@
+import Link from "next/link";
+export default function Setup() {
+  return (
+    <main className="auth">
+      <div className="panel">
+        <span className="tag">SETUP REQUIRED</span>
+        <h1>Your workspace is almost ready.</h1>
+        <p>
+          The owner needs to configure this app’s Supabase project, apply the
+          database migration, and set the environment variables before accounts
+          and projects can be used.
+        </p>
+        <p>No demo activity or earnings are shown as real records.</p>
+        <Link className="button" href="/">
+          Back to home
+        </Link>
+      </div>
+    </main>
+  );
+}

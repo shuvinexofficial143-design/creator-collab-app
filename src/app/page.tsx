@@ -1,0 +1,103 @@
+import Link from "next/link";
+import { ArrowUpRight, AudioLines, Package, CheckCircle2 } from "lucide-react";
+import { brand } from "@/lib/config";
+export default function Home() {
+  return (
+    <main className="landing">
+      <nav>
+        <Link className="brand" href="/">
+          ◈ {brand}
+        </Link>
+        <Link className="button secondary" href="/auth/login">
+          Creator sign in <ArrowUpRight size={16} />
+        </Link>
+      </nav>
+      <section className="hero">
+        <div>
+          <span className="eyebrow">
+            SMALL TEAM. MEANINGFUL COLLABORATIONS.
+          </span>
+          <h1>
+            Your creativity.
+            <br />
+            Our next <em>great story.</em>
+          </h1>
+          <p>
+            Create thoughtful product videos and expressive voice overs. A clear
+            brief, personal approval, and one place to track every step.
+          </p>
+          <div className="actions">
+            <Link className="button" href="/auth/register">
+              Join as a creator <ArrowUpRight size={18} />
+            </Link>
+            <Link className="textlink" href="#how">
+              How it works ↓
+            </Link>
+          </div>
+          <p className="subtle">
+            Applications are reviewed personally. No joining fee.
+          </p>
+        </div>
+        <div className="hero-art">
+          <span className="tag">MADE FOR CREATORS</span>
+          <div className="art-icon">
+            <AudioLines size={90} />
+          </div>
+          <h2>
+            Make something
+            <br />
+            worth sharing.
+          </h2>
+          <div className="art-bottom">
+            <span>PRODUCT STORIES</span>
+            <span>VOICE OVERS ↗</span>
+          </div>
+        </div>
+      </section>
+      <section className="grid two">
+        <article className="panel">
+          <Package className="feature-icon" />
+          <span className="eyebrow">01 / PRODUCT COLLABORATIONS</span>
+          <h2>Bring products to life.</h2>
+          <p>
+            Apply to a product brief. Once approved, receive the product, record
+            your video and submit it for feedback.
+          </p>
+        </article>
+        <article className="panel">
+          <AudioLines className="feature-icon" />
+          <span className="eyebrow">02 / VOICE OVER PROJECTS</span>
+          <h2>Give the story a voice.</h2>
+          <p>
+            Explore recording briefs, receive your approved script and upload
+            your recording from wherever you create.
+          </p>
+        </article>
+      </section>
+      <section id="how" className="how">
+        <span className="eyebrow">A CLEAR PROCESS, FROM START TO FINISH</span>
+        <h2>Less back-and-forth. More creating.</h2>
+        <div className="grid three">
+          {[
+            ["Apply", "Choose a brief that fits your style."],
+            ["Create", "Receive approval and follow your assigned brief."],
+            [
+              "Get reviewed",
+              "Submit work, resolve feedback and track recorded payments.",
+            ],
+          ].map(([title, body]) => (
+            <article key={title}>
+              <CheckCircle2 />
+              <h3>{title}</h3>
+              <p>{body}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <footer>
+        © {new Date().getFullYear()} {brand} · Payments are recorded after
+        manual transfer.
+      </footer>
+    </main>
+  );
+}

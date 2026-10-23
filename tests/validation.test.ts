@@ -1,0 +1,38 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { safeNext, validateUpload, projectSchema } from "../src/lib/validation";
+test("redirects stay on the app origin", () => {
+  for (const value of [
+    "https://evil.example",
+    "//evil.example",
+    "/\\evil.example",
+    "/\nevil",
+  ])
+    assert.equal(safeNext(value), "/workspace");
+  assert.equal(safeNext("/auth/reset"), "/auth/reset");
+});
+test("upload restrictions distinguish audio and video", () => {
+  assert.ok(validateUpload("audio/mpeg", 1024, "VOICE"));
+  assert.ok(!validateUpload("video/mp4", 1024, "VOICE"));
+  assert.ok(!validateUpload("audio/mpeg", 104857601, "VOICE"));
+  assert.ok(!validateUpload("text/html", 100, "PRODUCT"));
+  assert.ok(!validateUpload("video/mp4", 0, "PRODUCT"));
+});
+test("payment amount cannot be negative or fractional paise", () => {
+  const base = {
+    title: "Example",
+    description: "A detailed example",
+    kind: "VOICE",
+    payment_paise: 100,
+    instructions: "",
+    script: "",
+    language: "Hindi",
+    usage_terms: "Commercial usage",
+    capacity: 1,
+    deadline: "2026-12-01T00:00:00.000Z",
+    status: "DRAFT",
+  };
+  assert.ok(projectSchema.safeParse(base).success);
+  assert.ok(!projectSchema.safeParse({ ...base, payment_paise: -1 }).success);
+  assert.ok(!projectSchema.safeParse({ ...base, payment_paise: 10.5 }).success);
+});
