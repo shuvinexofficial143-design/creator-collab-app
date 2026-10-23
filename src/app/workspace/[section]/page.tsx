@@ -1,5 +1,6 @@
 import {CleanupPanel} from "@/components/cleanup-panel";
 import { pendingApplications, pendingSubmissions } from "@/lib/admin-search";
+import { findProjects } from "@/lib/project-search";
 import { sampleProject } from "@/lib/samples";
 import { AdminHistory } from "@/components/admin-history";
 import Link from "next/link";
@@ -26,14 +27,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; history_page?: string; admin_search?: string; admin_page?: string; app_page?: string; review_page?: string; earnings_page?: string }>;
+  searchParams: Promise<{ kind?: string; project_search?: string; project_status?: string; project_page?: string; history_page?: string; admin_search?: string; admin_page?: string; app_page?: string; review_page?: string; earnings_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history", "cleanup"].includes(section),
   );
-  const { kind, history_page, admin_search, admin_page, app_page, review_page, earnings_page } = await searchParams;
+  const { kind, project_search, project_status, project_page, history_page, admin_search, admin_page, app_page, review_page, earnings_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -69,43 +70,75 @@ export default async function Section({
       </>
     );
   if (section === "projects") {
-    let query = client
-      .from("projects")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (kind === "PRODUCT" || kind === "VOICE") query = query.eq("kind", kind);
-    const { data, error } = await query;
-    if (error) throw Error("Projects unavailable");
+    const kindFilter = kind === "PRODUCT" || kind === "VOICE" ? kind : "ALL";
+    const statusFilter = profile.role === "ADMIN" && ["DRAFT","PUBLISHED","CLOSED","ARCHIVED"].includes(project_status || "")
+      ? project_status! : "ALL";
+    const phrase = String(project_search || "").trim().slice(0, 80);
+    const page = project_page && /^[1-9][0-9]{0,2}$/.test(project_page) ? Number(project_page) : 1;
+    const data = await findProjects(client,{kind:kindFilter,status:statusFilter,search:phrase,page});
+    const pageUrl = (number:number) => {
+      const query = new URLSearchParams();
+      if (kindFilter !== "ALL") query.set("kind",kindFilter);
+      if (statusFilter !== "ALL") query.set("project_status",statusFilter);
+      if (phrase) query.set("project_search",phrase);
+      query.set("project_page",String(number));
+      return `/workspace/projects?${query.toString()}`;
+    };
     return (
       <>
         {heading}
-        <p>Clear briefs, transparent payments, personal approval.</p>
-        <div className="filters">
-          <Link href="/workspace/projects">All projects</Link>
-          <Link href="?kind=PRODUCT">Product videos</Link>
-          <Link href="?kind=VOICE">Voice overs</Link>
-        </div>
+        <p>Find a paid collaboration with a clear brief. Search covers all projects your account is allowed to see.</p>
+        <form action="/workspace/projects" method="get" className="panel">
+          <div className="grid three">
+            <label>
+              Search projects
+              <input name="project_search" defaultValue={phrase} maxLength={80}
+                placeholder="Project title, description or language" />
+            </label>
+            <label>
+              Project type
+              <select name="kind" defaultValue={kindFilter}>
+                <option value="ALL">All types</option>
+                <option value="PRODUCT">Product videos</option>
+                <option value="VOICE">Voice overs</option>
+              </select>
+            </label>
+            {profile.role === "ADMIN" && <label>
+              Project status
+              <select name="project_status" defaultValue={statusFilter}>
+                <option value="ALL">All statuses</option>
+                {["DRAFT","PUBLISHED","CLOSED","ARCHIVED"].map((value)=>
+                  <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>}
+          </div>
+          <div className="row">
+            <button type="submit">Search projects</button>
+            <Link className="textlink" href="/workspace/projects">Clear filters</Link>
+          </div>
+        </form>
+        <p>{data.total} matching project(s) · Page {page}</p>
         <div className="grid two">
-          {data.map((p) => (
+          {data.items.map((p) => (
             <article className="panel project" key={p.id}>
               <span className="tag">
-                {p.kind === "VOICE" ? "VOICE OVER" : "PRODUCT VIDEO"} ·{" "}
-                {p.status}
+                {p.kind === "VOICE" ? "VOICE OVER" : "PRODUCT VIDEO"} · {p.status}
               </span>
               <h2>{p.title}</h2>
               <p>{p.description.slice(0, 180)}</p>
               <div className="row">
                 <strong>{money(p.payment_paise)}</strong>
-                <Link className="textlink" href={`/workspace/projects/${p.id}`}>
-                  View brief ↗
-                </Link>
+                <Link className="textlink" href={`/workspace/projects/${p.id}`}>View brief ↗</Link>
               </div>
             </article>
           ))}
         </div>
-        {!data.length && (
-          <Empty text="No projects available yet. Check back when a new brief is published." />
-        )}
+        {!data.items.length && <Empty text="No matching projects found. Try another search or filter." />}
+        <nav className="filters" aria-label="Project results pages">
+          {page > 1 && <Link href={pageUrl(page-1)}>← Previous projects</Link>}
+          <span>Page {page} · {data.total} matching projects</span>
+          {page*20 < data.total && <Link href={pageUrl(page+1)}>Next projects →</Link>}
+        </nav>
       </>
     );
   }
