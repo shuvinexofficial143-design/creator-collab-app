@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { account } from "@/lib/auth";
-import { money } from "@/lib/config";
 import { readWorkspaceMetrics } from "@/lib/workspace-metrics";
 export default async function Overview() {
   const { client, profile } = await account();
@@ -14,10 +13,7 @@ export default async function Overview() {
         {[
           ["Pending applications", metrics.pending_applications],
           ["Active assignments", metrics.active_assignments],
-          [
-            "Actually paid",
-            money(metrics.paid_earnings_paise),
-          ],
+          ["Work awaiting review", metrics.awaiting_review],
         ].map(([label, value]) => (
           <article className="panel stat" key={label}>
             <span>{label}</span>
