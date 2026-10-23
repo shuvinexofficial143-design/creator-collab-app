@@ -6,7 +6,6 @@ import { AdminHistory } from "@/components/admin-history";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { account } from "@/lib/auth";
-import { money } from "@/lib/config";
 import { readWorkspaceMetrics } from "@/lib/workspace-metrics";
 import { ActionForm } from "@/components/action-form";
 import { ProjectForm } from "@/components/project-form";
@@ -17,7 +16,6 @@ const titles: Record<string, string> = {
   projects: "Find your next collaboration",
   applications: "Your applications",
   work: "Your creative work",
-  earnings: "Earnings & payments",
   notifications: "Your updates",
   profile: "Your profile",
   admin: "Manage your collaborations",
@@ -27,14 +25,14 @@ export default async function Section({
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ kind?: string; project_search?: string; project_status?: string; project_page?: string; history_page?: string; admin_search?: string; admin_page?: string; app_page?: string; review_page?: string; earnings_page?: string }>;
+  searchParams: Promise<{ kind?: string; project_search?: string; project_status?: string; project_page?: string; history_page?: string; admin_search?: string; admin_page?: string; app_page?: string; review_page?: string }>;
 }) {
   const { section } = await params;
   if (!titles[section]) notFound();
   const { client, profile, user } = await account(
     ["admin", "history", "cleanup"].includes(section),
   );
-  const { kind, project_search, project_status, project_page, history_page, admin_search, admin_page, app_page, review_page, earnings_page } = await searchParams;
+  const { kind, project_search, project_status, project_page, history_page, admin_search, admin_page, app_page, review_page } = await searchParams;
   const heading = (
     <>
       <span className="eyebrow">CREATOR COLLABORATION</span>
@@ -87,7 +85,7 @@ export default async function Section({
     return (
       <>
         {heading}
-        <p>Find a paid collaboration with a clear brief. Search covers all projects your account is allowed to see.</p>
+        <p>Explore available collaborations with a clear brief. Search covers all projects your account is allowed to see.</p>
         <form action="/workspace/projects" method="get" className="panel">
           <div className="grid three">
             <label>
@@ -127,8 +125,7 @@ export default async function Section({
               <h2>{p.title}</h2>
               <p>{p.description.slice(0, 180)}</p>
               <div className="row">
-                <strong>{money(p.payment_paise)}</strong>
-                <Link className="textlink" href={`/workspace/projects/${p.id}`}>View brief ↗</Link>
+                                <Link className="textlink" href={`/workspace/projects/${p.id}`}>View brief ↗</Link>
               </div>
             </article>
           ))}
@@ -167,7 +164,7 @@ export default async function Section({
           </article>
         ))}
         {!data.length && (
-          <Empty text="Your project and payment updates will appear here." />
+          <Empty text="Your project updates will appear here." />
         )}
       </>
     );
@@ -209,8 +206,7 @@ export default async function Section({
             <div>
               <span className="tag">{a.status}</span>
               <h2>{a.projects?.title}</h2>
-              <p>Agreed payment: {money(a.payment_paise)}</p>
-            </div>
+                          </div>
             <Link
               className="button"
               href={`/workspace/projects/${a.project_id}`}
@@ -222,60 +218,6 @@ export default async function Section({
         {!data.length && (
           <Empty text="Approved assignments will appear here with your script, shipping and upload options." />
         )}
-      </>
-    );
-  }
-  if (section === "earnings") {
-    const metrics = await readWorkspaceMetrics(client);
-    const page = earnings_page && /^[1-9][0-9]{0,2}$/.test(earnings_page)
-      ? Number(earnings_page) : 1;
-    const pageSize = 25;
-    const { data, error } = await client
-      .from("payments")
-      .select("*")
-      .order("id", { ascending: false })
-      .range((page - 1) * pageSize, page * pageSize - 1);
-    if (error) throw Error("Payments unavailable");
-    return (
-      <>
-        {heading}
-        <p>
-          Actual transfers happen manually outside this app. A payment is marked
-          paid only after an Admin records it. Totals include all authorized
-          payment records, not just the visible page.
-        </p>
-        <div className="grid three">
-          {[
-            ["Approved earnings", metrics.approved_earnings_paise],
-            ["Pending payment", metrics.pending_earnings_paise],
-            ["Actually paid", metrics.paid_earnings_paise],
-          ].map(([label, amount]) => (
-            <article className="panel stat" key={String(label)}>
-              <span>{String(label)}</span>
-              <strong>{money(Number(amount))}</strong>
-            </article>
-          ))}
-        </div>
-        {data.map((p) => (
-          <article className="panel row" key={p.id}>
-            <strong>{money(p.amount_paise)}</strong>
-            <span className="tag">{p.status}</span>
-            <span>
-              {p.reference || "Awaiting transfer"}
-              {p.paid_at && ` · ${new Date(p.paid_at).toLocaleDateString("en-IN")}`}
-            </span>
-          </article>
-        ))}
-        {!metrics.payable_count && (
-          <Empty text="No approved earnings yet. They appear after your work is approved." />
-        )}
-        <nav className="filters" aria-label="Earnings history pages">
-          {page > 1 && <Link href={`/workspace/earnings?earnings_page=${page - 1}`}>← Previous</Link>}
-          <span>Page {page} · {metrics.payable_count} total records</span>
-          {page * pageSize < metrics.payable_count && (
-            <Link href={`/workspace/earnings?earnings_page=${page + 1}`}>Next →</Link>
-          )}
-        </nav>
       </>
     );
   }
@@ -292,23 +234,22 @@ export default async function Section({
     pendingApplications(client,search,appPage),
     pendingSubmissions(client,search,reviewPage),
     Promise.all([
-      client.from("payments").select("*",{count:"exact"}).neq("status","PAID").order("id",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
       client.from("profiles").select("id,full_name,role,active",{count:"exact"}).order("created_at",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
       client.from("shipping").select("*",{count:"exact"}).eq("status","READY").order("assignment_id",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
       client.from("assignments").select("id,status,delivery_deadline,projects(title)",{count:"exact"}).neq("status","APPROVED").order("created_at",{ascending:false}).range(adminStart,adminStart+adminPageSize-1),
     ]),
   ]);
   if (results.some((r)=>r.error)) throw Error("Admin records unavailable");
-  const [payments,creators,shipping,deadlines]=results;
+  const [creators,shipping,deadlines]=results;
   return (
     <>
       {heading}
-      <p>Review applications, manage briefs, and record completed transfers.</p>
+      <p>Review applications, manage briefs and approve completed work.</p>
       <p className="subtle">Dashboard totals include all authorized records. Applications and reviews search the entire database on separate pages. Other queues display 50 entries per page.</p>
       <div className="grid three">
         <Stat label="Pending applications" value={metrics.pending_applications} />
         <Stat label="Awaiting review" value={metrics.awaiting_review} />
-        <Stat label="Outstanding payments" value={metrics.outstanding_payments} />
+        <Stat label="Active assignments" value={metrics.active_assignments} />
       </div>
       <details className="panel">
         <summary>Create a project</summary>
@@ -317,8 +258,7 @@ export default async function Section({
       <details className="panel">
         <summary>Sample project templates (drafts only)</summary>
         <p>
-          These are clearly labeled examples. No earnings, users or payments are
-          generated. Review and replace sample terms before publishing.
+          These are labeled sample briefs only. Review the instructions before publishing.
         </p>
         {(["birthday", "unboxing", "voice"] as const).map((kind) => (
           <details className="panel" key={kind}>
@@ -471,36 +411,6 @@ export default async function Section({
           </ActionForm>
         </article>
       ))}
-      <h2>Outstanding payments</h2>
-      {payments.data!.map((p) => (
-        <article className="panel" key={p.id}>
-          <h3>
-            {money(p.amount_paise)} · {p.status}
-          </h3>
-          <p>Creator ID: {p.creator_id}</p>
-          <ActionForm
-            action={mutate.bind(null, "payment")}
-            label="Record payment status"
-          >
-            <input type="hidden" name="target" value={p.id} />
-            <label>
-              Status
-              <select name="status">
-                <option>PROCESSING</option>
-                <option>PAID</option>
-              </select>
-            </label>
-            <label>
-              Actual UPI / bank transaction reference
-              <input name="reference" maxLength={200} />
-            </label>
-            <p className="subtle">
-              Choose PAID only after the actual transfer. A reference is
-              required.
-            </p>
-          </ActionForm>
-        </article>
-      ))}
       <h2>Creators</h2>
       {creators.data!.map((c) => (
         <div key={c.id} className="panel row">
@@ -521,7 +431,7 @@ export default async function Section({
       ))}
       <nav className="filters" aria-label="Admin queue navigation">
         {adminPage > 1 && <Link href={`/workspace/admin?admin_page=${adminPage - 1}${searchSuffix}`}>← Previous</Link>}
-        <span>Operational queues page {adminPage} · {payments.count ?? "—"} outstanding payments</span>
+        <span>Operational queues page {adminPage} · {creators.count ?? "—"} user account(s)</span>
         {results.some((r) => r.count !== null && r.count > adminPage * adminPageSize) && (
           <Link href={`/workspace/admin?admin_page=${adminPage + 1}${searchSuffix}`}>Next →</Link>
         )}
