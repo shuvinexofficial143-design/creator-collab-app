@@ -4,6 +4,7 @@ import { MediaUpload } from "@/components/media-upload";
 import { notFound } from "next/navigation";
 import { account } from "@/lib/auth";
 import { uuid } from "@/lib/validation";
+import { youtubeEmbedUrl } from "@/lib/youtube";
 import { ActionForm } from "@/components/action-form";
 import { ProjectForm } from "@/components/project-form";
 import { Upload } from "@/components/upload";
@@ -110,6 +111,19 @@ export default async function Project({
                   )}{" "}
                   IST
                 </p>
+              )}
+              {youtubeEmbedUrl(brief.details.reference_url) && (
+                <div style={{ width: "100%", marginBlock: 16 }}>
+                  <iframe
+                    title="YouTube reference video"
+                    loading="lazy"
+                    src={youtubeEmbedUrl(brief.details.reference_url)!}
+                    style={{ width: "100%", aspectRatio: "16/9", border: 0, borderRadius: 12 }}
+                    allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                </div>
               )}
               {brief.details.reference_url &&
                 /^https?:\/\//i.test(brief.details.reference_url) && (
