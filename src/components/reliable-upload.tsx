@@ -106,9 +106,26 @@ export function ReliableUpload({
         ...session.payload,
       },
     });
-    setMessage(
-      media ? "Media attached successfully." : "Submitted for review.",
-    );
+    if (media) {
+      setMessage("Media attached successfully.");
+    } else {
+      // The submission is saved before the owner is notified. Telegram failure
+      // must never erase the Creator's completed work.
+      try {
+        const response = await fetch("/api/owner-delivery", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storage_path: session.path }),
+        });
+        setMessage(
+          response.ok
+            ? "Submitted and privately delivered to the owner for review."
+            : "Submitted successfully. Owner delivery is pending; please contact the owner.",
+        );
+      } catch {
+        setMessage("Submitted successfully. Owner delivery is pending; please contact the owner.");
+      }
+    }
     router.refresh();
   }
   async function status(id: string) {
@@ -266,6 +283,13 @@ export function ReliableUpload({
             }
           />
         </label>
+        {!media && (
+          <small>
+            Your submitted audio/video is shared privately with the business owner
+            through Telegram for review. Larger files may be delivered as an
+            expiring private download link.
+          </small>
+        )}
         <small>
           Maximum {media ? "50" : "100"} MiB · private storage ·{" "}
           {kind === "VOICE"
