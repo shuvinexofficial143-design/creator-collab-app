@@ -1,4 +1,14 @@
-# Creator Collaboration — Security Audit (Phase 4, 2026-10-22)
+# Creator Collaboration — Security Audit (Phase 5 update, 2026-10-23)
+
+## Phase 5 security review
+- `admin_find_pending()` verifies an active Admin, executes as SECURITY INVOKER, validates queue/page/length, searches user text as literal substrings and returns only 25-row pages. A disposable PostgreSQL test verifies rejection of Creator/anonymous/inactive Admin access and 65+ record paging.
+- `find_projects()` is SECURITY INVOKER and obeys existing project RLS. Admin-only statuses and draft visibility are guarded at the database level. A 1,001-project simulation tests exact counts and Creator draft denial.
+- Deadline form values are now explicitly parsed as IST (+05:30), validated and persisted as UTC; no data migration was applied to prior rows.
+- Read-only `npm run preflight` rejects missing preview origins, malformed URLs and obvious service-role/secret key leaks without disclosing the supplied key.
+- Latest npm advisory evidence (2026-10-23) still shows [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) affecting `braces <=3.0.3` with no patched release. Continue monitoring; do not invent a forced fix or suppress warnings.
+- **Hosted security remains untested**: Supabase Advisors, real Storage access and signed URL expiry, authenticated Admin/Creator E2E, third-party content inspection, 401/403 against deployed endpoints and Android device privacy.
+
+## Prior security audit (Phase 4)
 
 ## Trust boundary review (source-level)
 - **Authentication**: Supabase SSR `getUser()` is checked server-side; `account(true)` verifies active ADMIN for protected pages/actions. API export separately returns 401 unauthenticated, 403 non-Admin, and fails closed if a profile cannot be verified. No service-role client is shipped.

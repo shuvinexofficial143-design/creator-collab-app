@@ -1,3 +1,30 @@
+# Phase 5 — 2026-10-23: Functional recovery and integration readiness
+
+## Remote source recovered
+- Starting HEAD: `d00afec25a7b678ecd5a24f5a4544ecfbeee8249` on `feature/creator-platform-mvp`. Both prior code CI runs passed.
+- Supabase connector is authenticated. The connected organization currently offers unrelated NEXORA-COMMERCE, YASHIKA-COMPUTERS, Open-Chet and one email-named project; **none** is identified as Creator Collab. Their schemas, Auth, Storage and billing are untouched.
+- Two connected Vercel accounts were checked; neither has a Creator Collab project. No preview or production deployment was created.
+- Project creation requires explicit selection of the organization and cost approval before provisioning. No credentials are present in GitHub.
+
+## Phase 5 functionality implemented
+- Sixth migration `20261023051500_admin_find_pending.sql`: SECURITY INVOKER with active Admin verification; full-database literal substring search across pending application notes, Creator names, project titles, submission notes, with separate exact count/25-row page results. Param validation and permission tests include multiple pages, unsupported queues, wildcard literal matching and suspended Admin denial.
+- Admin applications and submission review queues now search all authorized records rather than only 50 loaded rows. Independent pagination keeps either queue navigable; existing other operational queues remain paginated separately.
+- Seventh migration `20261023053500_find_projects.sql`: RLS-preserving project catalog search by title/description/language, Product/Voice filter and status filter with exact totals and 20-row pages. A 1,001-record fixture checks beyond the REST default limit plus draft isolation and denied anonymous requests.
+- Admin and Creator project browse UI now uses database-backed project search and pagination. Admin can filter draft/published/closed/archive; non-Admin is still limited by PostgreSQL RLS.
+- Fixed timezone bug in Admin forms: `datetime-local` values now explicitly represent **IST**. Round-trip helpers convert to UTC before persistence and reverse-convert for editing and extensions, including date-boundary and invalid-date tests. Supabase stores UTC timestamps.
+- Android Chrome **emulation**, not physical Android, is now the Playwright mobile target (Pixel 7). Public auth pages and invalid-email validation are tested for usability and overflow.
+- `npm run preflight` validates required Vercel/Supabase preview origin/key inputs read-only without printing key values. It is not a substitute for hosted Auth/Storage verification.
+
+## Verification and limits
+- GitHub CI has successfully validated database-search logic, 1,001-record cases, UI search, IST conversion and Android-emulated public-page checks for the listed functional checkpoints. Always consult the newest CI run before treating any newly pushed changes as tested.
+- Latest deployment-preflight code requires its own post-push CI conclusion; do not infer it from preceding commits.
+- Hosted Supabase Auth, SQL migration application, RLS Advisors, real private upload and TUS resume, real Admin/Creator browser sessions, email confirmation and mobile hardware: **BLOCKED / NOT TESTED** without a dedicated authorized Supabase backend and test accounts.
+- No automated real payment or real production activity was created, and no merge to main occurred.
+- npm `braces@3.0.3` remains a development dependency with an unresolved advisory and no published fixed release according to the GitHub advisory checked October 23. No `npm audit fix --force` or advisory suppression.
+- Fresh GitHub production builds succeeding do not prove or disprove the previous Astra machine's Turbopack cache failure.
+
+---
+
 # Phase 4 development — 2026-10-22
 
 ## Recovered source and verified starting point

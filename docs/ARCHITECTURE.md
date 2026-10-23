@@ -25,3 +25,9 @@ The SQL integration test uses PGlite PostgreSQL with small auth/storage schema f
 `GET /api/admin/export` validates the Supabase user and active ADMIN profile on the server, resolves only a static dataset/column allow-list, counts rows exactly and refuses any export above 5,000 records. It iterates small read batches, validates row shapes and returns a non-cacheable CSV attachment with spreadsheet formula-cell protection. The API never uses a service-role token. Hosted authorization testing remains pending.
 
 Admin queue lists now use 50-row server-side pages across applications, submissions, outstanding payments, creators, dispatch-ready shipping and delivery deadlines. Counts are obtained independently of those pages. Current keyword search is limited to the loaded queue page and is labelled accordingly; full database search remains pending.
+
+## Phase 5 query and time boundaries
+- `admin_find_pending()` is an active-Admin-only SECURITY INVOKER SQL RPC for pending applications and reviews. It performs database-wide literal case-insensitive search over project, note and Creator-name fields and returns exact counts and bounded results. Each queue paginates independently of the other operational queues.
+- `find_projects()` is an RLS-preserving SECURITY INVOKER SQL RPC for catalog title/description/language search, type/status filtering and bounded pages. The role's existing `public.projects` RLS determines which projects are visible.
+- All browser `datetime-local` business deadline controls are explicitly IST and converted to UTC during Server Actions; saved timestamps are reverse formatted in IST to prevent server timezone drift.
+- Vercel preview uses `npm run preflight` to catch obviously unsafe variable configuration. This is purely local/static, not a live Supabase connection test.
